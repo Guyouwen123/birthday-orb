@@ -135,7 +135,7 @@ function centerPiece(index) {
   const { x, y, z } = piece.normal;
   const targetY = Math.atan2(x, z);
   const horizontal = Math.hypot(x, z);
-  const targetX = Math.atan2(-y, horizontal);
+  const targetX = Math.atan2(y, horizontal);
 
   state.targetY = shortestAngle(state.targetY, targetY);
   state.targetX = shortestAngle(state.targetX, targetX);
@@ -376,14 +376,15 @@ canvas.addEventListener("pointerdown", (event) => {
   state.dragStart = {
     clientX: event.clientX,
     clientY: event.clientY,
+    localX: point.x,
+    localY: point.y,
+    moved: false,
     rotationX: state.targetX,
     rotationY: state.targetY
   };
   updatePointer(event.clientX, event.clientY);
   canvas.setPointerCapture(event.pointerId);
   orbWrap.classList.add("dragging");
-  const pick = nearestPiece(point.x, point.y, 70);
-  if (pick >= 0) selectPiece(pick, true, true);
 });
 
 canvas.addEventListener("pointermove", (event) => {
@@ -392,6 +393,7 @@ canvas.addEventListener("pointermove", (event) => {
   if (state.dragStart) {
     const dx = event.clientX - state.dragStart.clientX;
     const dy = event.clientY - state.dragStart.clientY;
+    if (Math.hypot(dx, dy) > 6) state.dragStart.moved = true;
     state.targetY = state.dragStart.rotationY + dx * 0.009;
     state.targetX = state.dragStart.rotationX - dy * 0.009;
     return;
@@ -401,6 +403,10 @@ canvas.addEventListener("pointermove", (event) => {
 });
 
 canvas.addEventListener("pointerup", (event) => {
+  if (state.dragStart && !state.dragStart.moved) {
+    const pick = nearestPiece(state.dragStart.localX, state.dragStart.localY, 76);
+    if (pick >= 0) selectPiece(pick, true, true);
+  }
   state.dragStart = null;
   orbWrap.classList.remove("dragging");
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
