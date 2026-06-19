@@ -97,6 +97,16 @@ const state = {
 };
 
 const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
+const birthdaySongNotes = [
+  ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["C5", 0.64], ["B4", 1.2],
+  ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["D5", 0.64], ["C5", 1.2],
+  ["G4", 0.32], ["G4", 0.32], ["G5", 0.64], ["E5", 0.64], ["C5", 0.64], ["B4", 0.64], ["A4", 1.2],
+  ["F5", 0.32], ["F5", 0.32], ["E5", 0.64], ["C5", 0.64], ["D5", 0.64], ["C5", 1.4]
+];
+
+function birthdaySongDurationMs() {
+  return birthdaySongNotes.reduce((total, [, duration]) => total + duration, 0) * 1000;
+}
 
 function pieceIndexByGlyph(glyph) {
   return state.pieces.findIndex((piece) => piece.glyph === glyph);
@@ -522,13 +532,15 @@ function triggerFinale() {
     "rgba(246,213,138,ALPHA)",
     "rgba(255,157,181,ALPHA)"
   ];
-  const burstCount = 18;
+  const finaleDurationMs = birthdaySongDurationMs();
+  const burstIntervalMs = 420;
+  const burstCount = Math.ceil(finaleDurationMs / burstIntervalMs);
   for (let index = 0; index < burstCount; index += 1) {
     const timer = window.setTimeout(() => {
       const x = state.width * (0.18 + Math.random() * 0.64);
       const y = state.height * (0.18 + Math.random() * 0.34);
       launchFirework(x, y, colors[index % colors.length]);
-    }, index * 520);
+    }, index * burstIntervalMs);
     state.finaleTimers.push(timer);
   }
   playBirthdaySong({ loop: false, restart: true, status: "生日快乐歌播放中。" });
@@ -678,12 +690,6 @@ function playBirthdaySong(options = {}) {
   musicButton.setAttribute("title", "暂停生日快乐歌");
   statusText.textContent = status;
 
-  const notes = [
-    ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["C5", 0.64], ["B4", 1.2],
-    ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["D5", 0.64], ["C5", 1.2],
-    ["G4", 0.32], ["G4", 0.32], ["G5", 0.64], ["E5", 0.64], ["C5", 0.64], ["B4", 0.64], ["A4", 1.2],
-    ["F5", 0.32], ["F5", 0.32], ["E5", 0.64], ["C5", 0.64], ["D5", 0.64], ["C5", 1.4]
-  ];
   const frequencies = {
     G4: 392,
     A4: 440,
@@ -696,7 +702,7 @@ function playBirthdaySong(options = {}) {
   };
 
   let cursor = state.audioContext.currentTime + 0.04;
-  notes.forEach(([note, duration]) => {
+  birthdaySongNotes.forEach(([note, duration]) => {
     playTone(frequencies[note], cursor, duration * 0.86);
     cursor += duration;
   });
