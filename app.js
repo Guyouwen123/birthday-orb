@@ -394,7 +394,7 @@ canvas.addEventListener("pointermove", (event) => {
     const dx = event.clientX - state.dragStart.clientX;
     const dy = event.clientY - state.dragStart.clientY;
     if (Math.hypot(dx, dy) > 6) state.dragStart.moved = true;
-    state.targetY = state.dragStart.rotationY + dx * 0.009;
+    state.targetY = state.dragStart.rotationY - dx * 0.009;
     state.targetX = state.dragStart.rotationX - dy * 0.009;
     return;
   }
@@ -517,7 +517,7 @@ async function detectHands() {
         const dx = normalizedX - state.lastFinger.x;
         const dy = normalizedY - state.lastFinger.y;
         if (Math.abs(dx) + Math.abs(dy) < 0.22) {
-          state.targetY += dx * 3.2;
+          state.targetY -= dx * 3.2;
           state.targetX -= dy * 3.2;
         }
       }
