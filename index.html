@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>生日祝福星球</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="birthday-app" aria-label="生日祝福星球">
+      <section class="stage">
+        <div class="topbar">
+          <div>
+            <p class="eyebrow">Happy Birthday</p>
+            <h1>生日祝福星球</h1>
+          </div>
+          <div class="controls" aria-label="互动控制">
+            <button class="icon-button" id="cameraButton" type="button" aria-label="开启摄像头手势选择" title="开启摄像头手势选择">
+              <span class="camera-icon" aria-hidden="true"></span>
+            </button>
+            <button class="icon-button" id="shuffleButton" type="button" aria-label="换一组祝福" title="换一组祝福">
+              <span class="spark-icon" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="orb-wrap" id="orbWrap">
+          <div class="gesture-layer" id="gestureLayer" aria-hidden="true">
+            <video id="cameraFeed" playsinline muted></video>
+            <canvas id="gestureCanvas"></canvas>
+            <div class="finger-dot" id="fingerDot"></div>
+          </div>
+          <div class="orb-shadow" aria-hidden="true"></div>
+          <div class="orb" id="orb" aria-label="可选择的生日祝福球"></div>
+          <div class="selection-card" id="selectionCard" aria-live="polite">
+            <span class="selected-glyph" id="selectedGlyph">愿</span>
+            <p id="selectedMessage">愿你新的一岁，所有奔赴都有回响。</p>
+          </div>
+        </div>
+
+        <div class="hint-row">
+          <span id="statusText">拖拽球体，或点击任意祝福片。</span>
+          <span>开启摄像头后，用食指指向祝福片即可展开。</span>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
