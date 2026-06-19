@@ -374,7 +374,7 @@ canvas.addEventListener("pointermove", (event) => {
     const dx = event.clientX - state.dragStart.clientX;
     const dy = event.clientY - state.dragStart.clientY;
     state.targetY = state.dragStart.rotationY + dx * 0.009;
-    state.targetX = Math.max(-1.22, Math.min(1.22, state.dragStart.rotationX - dy * 0.009));
+    state.targetX = state.dragStart.rotationX - dy * 0.009;
     return;
   }
   const pick = nearestPiece(point.x, point.y, 54);
@@ -493,7 +493,7 @@ async function detectHands() {
         const dy = normalizedY - state.lastFinger.y;
         if (Math.abs(dx) + Math.abs(dy) < 0.22) {
           state.targetY += dx * 3.2;
-          state.targetX = Math.max(-1.22, Math.min(1.22, state.targetX - dy * 3.2));
+          state.targetX -= dy * 3.2;
         }
       }
       state.lastFinger = { x: normalizedX, y: normalizedY };
