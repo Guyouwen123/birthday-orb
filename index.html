@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>祝福星体</title>
-    <link rel="stylesheet" href="styles.css?v=20260619-fireworks-song-length" />
+    <link rel="stylesheet" href="styles.css?v=20260619-cake-scene" />
   </head>
   <body>
     <main class="birthday-app" aria-label="祝福星体">
@@ -34,6 +34,11 @@
           <span data-char="乐"></span>
         </div>
 
+        <div class="view-switch" id="viewSwitch" aria-hidden="true">
+          <button type="button" data-view="orb" aria-label="切换到星体界面"></button>
+          <button type="button" data-view="cake" aria-label="切换到蛋糕界面"></button>
+        </div>
+
         <div class="orb-wrap" id="orbWrap">
           <div class="gesture-layer" id="gestureLayer" aria-hidden="true">
             <video id="cameraFeed" playsinline muted></video>
@@ -55,6 +60,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=20260619-fireworks-song-length"></script>
+    <script src="app.js?v=20260619-cake-scene"></script>
   </body>
 </html>

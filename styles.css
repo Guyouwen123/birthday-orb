@@ -171,6 +171,39 @@ h1 {
   content: attr(data-char);
 }
 
+.view-switch {
+  display: flex;
+  gap: 10px;
+  height: 0;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: height 260ms ease, opacity 260ms ease, transform 260ms ease;
+}
+
+.view-switch.is-visible {
+  height: 28px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.view-switch button {
+  background: rgba(220, 232, 255, 0.16);
+  border: 1px solid rgba(191, 239, 255, 0.26);
+  border-radius: 50%;
+  cursor: pointer;
+  height: 12px;
+  padding: 0;
+  width: 12px;
+}
+
+.view-switch button.is-active {
+  background: #dff8ff;
+  box-shadow: 0 0 18px rgba(123, 223, 246, 0.46);
+}
+
 .icon-button {
   align-items: center;
   background: rgba(220, 232, 255, 0.1);

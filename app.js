@@ -58,6 +58,7 @@ const selectedGlyph = document.querySelector("#selectedGlyph");
 const selectedMessage = document.querySelector("#selectedMessage");
 const statusText = document.querySelector("#statusText");
 const nameSequence = document.querySelector("#nameSequence");
+const viewSwitch = document.querySelector("#viewSwitch");
 const cameraButton = document.querySelector("#cameraButton");
 const musicButton = document.querySelector("#musicButton");
 const cameraFeed = document.querySelector("#cameraFeed");
@@ -93,7 +94,12 @@ const state = {
   revealedNameChars: new Set(),
   finaleStarted: false,
   finaleTimers: [],
-  fireworks: []
+  fireworks: [],
+  viewMode: "orb",
+  orbOpening: 0,
+  targetOrbOpening: 0,
+  cakeUnlocked: false,
+  girlAwake: false
 };
 
 const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
@@ -301,6 +307,21 @@ function drawSoftShape(points) {
   ctx.closePath();
 }
 
+function roundedRect(x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 function drawBackground(time) {
   ctx.clearRect(0, 0, state.width, state.height);
 
@@ -395,10 +416,157 @@ function drawCore(time) {
   ctx.stroke();
 }
 
+function drawCakeScene(time) {
+  const cx = state.width / 2;
+  const cy = state.height / 2;
+  const glow = ctx.createRadialGradient(cx, cy, 20, cx, cy, state.radius * 1.22);
+  glow.addColorStop(0, "rgba(246,213,138,0.24)");
+  glow.addColorStop(0.5, "rgba(255,157,181,0.12)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, state.width, state.height);
+
+  drawCartoonGirl(cx, cy + state.radius * 0.04, time);
+  drawBirthdayCake(cx, cy + state.radius * 0.36, time);
+}
+
+function drawCartoonGirl(cx, cy, time) {
+  const scale = Math.min(state.width, state.height) / 620;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = "rgba(7, 10, 24, 0.34)";
+  ctx.beginPath();
+  ctx.ellipse(0, 190, 130, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#f7f0ff";
+  ctx.beginPath();
+  ctx.moveTo(-96, 168);
+  ctx.quadraticCurveTo(-42, 88, 0, 104);
+  ctx.quadraticCurveTo(44, 88, 96, 168);
+  ctx.quadraticCurveTo(32, 196, -96, 168);
+  ctx.fill();
+
+  ctx.fillStyle = "#8b4a38";
+  ctx.beginPath();
+  ctx.ellipse(0, -36, 102, 116, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const hair = ctx.createRadialGradient(-34, -72, 16, 0, -36, 120);
+  hair.addColorStop(0, "#c67655");
+  hair.addColorStop(0.58, "#8d4d3e");
+  hair.addColorStop(1, "#4b2b31");
+  ctx.fillStyle = hair;
+  ctx.beginPath();
+  ctx.ellipse(0, -28, 88, 104, 0.04, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffd8ca";
+  ctx.beginPath();
+  ctx.ellipse(0, -24, 66, 74, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#7a3d34";
+  for (let i = -4; i <= 4; i += 1) {
+    ctx.beginPath();
+    ctx.ellipse(i * 13, -91 + Math.abs(i) * 3, 9, 38, i * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#dff8ff";
+  ctx.beginPath();
+  ctx.ellipse(-58, -48, 14, 10, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#5d3130";
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  if (state.girlAwake) {
+    ctx.beginPath();
+    ctx.arc(-24, -24, 8, 0, Math.PI * 2);
+    ctx.arc(26, -24, 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "#2b1c24";
+    ctx.beginPath();
+    ctx.arc(-24, -24, 4, 0, Math.PI * 2);
+    ctx.arc(26, -24, 4, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(-24, -22, 15, 0.15, Math.PI - 0.15);
+    ctx.arc(26, -22, 15, 0.15, Math.PI - 0.15);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = "#c95f72";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(2, 14, 20, 0.22, Math.PI - 0.22);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,157,181,0.35)";
+  ctx.beginPath();
+  ctx.ellipse(-42, 6, 16, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(42, 6, 16, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#ffd8ca";
+  ctx.lineWidth = 20;
+  ctx.beginPath();
+  ctx.moveTo(-58, 104);
+  ctx.quadraticCurveTo(-34, 142, -10, 150);
+  ctx.moveTo(58, 104);
+  ctx.quadraticCurveTo(34, 142, 10, 150);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBirthdayCake(cx, cy, time) {
+  const scale = Math.min(state.width, state.height) / 620;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.beginPath();
+  ctx.ellipse(0, 94, 132, 22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#dff8ff";
+  roundedRect(-94, 12, 188, 86, 18);
+  ctx.fill();
+
+  ctx.fillStyle = "#ff9db5";
+  roundedRect(-94, 12, 188, 32, 18);
+  ctx.fill();
+
+  ctx.fillStyle = "#f6d58a";
+  for (let i = -3; i <= 3; i += 1) {
+    ctx.fillRect(i * 22 - 3, -30, 6, 42);
+    const flame = 1 + Math.sin(time * 0.006 + i) * 0.16;
+    ctx.fillStyle = "#fff1a8";
+    ctx.beginPath();
+    ctx.ellipse(i * 22, -38, 7 * flame, 12 * flame, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f6d58a";
+  }
+
+  ctx.fillStyle = "#08111f";
+  ctx.font = "700 22px Microsoft YaHei, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("生日快乐", 0, 69);
+  ctx.restore();
+}
+
 function drawPiece(piece, view, index, time) {
   const active = index === state.activeIndex;
   const lift = active ? 48 : 10 + Math.sin(time * 0.0018 + piece.phase) * 4;
   const projected = project(view, lift);
+  const openShift = state.orbOpening * Math.sign(view.x || piece.normal.x || 1) * state.radius * 0.72 * (0.35 + Math.abs(view.x));
+  projected.x += openShift;
+  projected.y += state.orbOpening * view.y * state.radius * 0.12;
   const light = Math.max(0, view.x * -0.18 + view.y * -0.32 + view.z * 0.92);
   const shade = -18 + light * 72;
   const alpha = Math.max(0, Math.min(1, (view.z + 0.86) / 1.86));
@@ -469,8 +637,17 @@ function render(time = 0) {
   state.orientation = quatSlerp(state.orientation, state.targetOrientation, orientationEase);
   state.pointer.x += (state.targetPointer.x - state.pointer.x) * pointerEase;
   state.pointer.y += (state.targetPointer.y - state.pointer.y) * pointerEase;
+  state.orbOpening += (state.targetOrbOpening - state.orbOpening) * 0.06;
 
   drawBackground(time);
+  if (state.orbOpening > 0.03) {
+    ctx.save();
+    ctx.globalAlpha = state.orbOpening;
+    drawCakeScene(time);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.globalAlpha = 1 - state.orbOpening * 0.62;
   drawCore(time);
 
   const views = state.pieces
@@ -483,6 +660,7 @@ function render(time = 0) {
       drawPiece(piece, view, index, time);
     }
   });
+  ctx.restore();
   drawFireworks();
 
   requestAnimationFrame(render);
@@ -526,6 +704,9 @@ function updateNameSequence(glyph) {
 
 function triggerFinale() {
   if (state.finaleTimers.length) return;
+  state.viewMode = "cake";
+  state.targetOrbOpening = 1;
+  state.girlAwake = false;
   const colors = [
     "rgba(123,223,246,ALPHA)",
     "rgba(184,140,255,ALPHA)",
@@ -544,6 +725,25 @@ function triggerFinale() {
     state.finaleTimers.push(timer);
   }
   playBirthdaySong({ loop: false, restart: true, status: "生日快乐歌播放中。" });
+}
+
+function showViewSwitch() {
+  viewSwitch.classList.add("is-visible");
+  viewSwitch.setAttribute("aria-hidden", "false");
+  updateViewSwitch();
+}
+
+function updateViewSwitch() {
+  viewSwitch.querySelectorAll("button").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.view === state.viewMode);
+  });
+}
+
+function setViewMode(view) {
+  if (!state.cakeUnlocked) return;
+  state.viewMode = view;
+  state.targetOrbOpening = view === "cake" ? 1 : 0;
+  updateViewSwitch();
 }
 
 function nearestPiece(x, y, maxDistance = 58) {
@@ -716,6 +916,11 @@ function playBirthdaySong(options = {}) {
       state.finaleTimers.forEach((timer) => window.clearTimeout(timer));
       state.finaleTimers = [];
       state.fireworks = [];
+      if (state.finaleStarted) {
+        state.girlAwake = true;
+        state.cakeUnlocked = true;
+        showViewSwitch();
+      }
       statusText.textContent = "拖拽星体，或点击任意祝福片。";
     }
   }, totalMs + 260));
@@ -855,6 +1060,11 @@ nameSequence.addEventListener("click", (event) => {
   if (!slot || !slot.classList.contains("is-revealed")) return;
   const index = pieceIndexByGlyph(slot.dataset.char);
   if (index >= 0) selectPiece(index, true, true);
+});
+viewSwitch.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-view]");
+  if (!button) return;
+  setViewMode(button.dataset.view);
 });
 window.addEventListener("resize", resize);
 
