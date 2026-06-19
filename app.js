@@ -432,93 +432,172 @@ function drawCakeScene(time) {
 
 function drawCartoonGirl(cx, cy, time) {
   const scale = Math.min(state.width, state.height) / 620;
+  const breathe = Math.sin(time * 0.002) * 2;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(scale, scale);
 
-  ctx.fillStyle = "rgba(7, 10, 24, 0.34)";
+  ctx.fillStyle = "rgba(6, 8, 22, 0.38)";
   ctx.beginPath();
-  ctx.ellipse(0, 190, 130, 24, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 205, 168, 30, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#f7f0ff";
+  ctx.shadowColor = "rgba(255, 210, 229, 0.32)";
+  ctx.shadowBlur = 26;
+  const backHair = ctx.createRadialGradient(-38, -80, 18, 0, -22, 142);
+  backHair.addColorStop(0, "#e0a06f");
+  backHair.addColorStop(0.34, "#a65c4c");
+  backHair.addColorStop(1, "#3d2230");
+  ctx.fillStyle = backHair;
   ctx.beginPath();
-  ctx.moveTo(-96, 168);
-  ctx.quadraticCurveTo(-42, 88, 0, 104);
-  ctx.quadraticCurveTo(44, 88, 96, 168);
-  ctx.quadraticCurveTo(32, 196, -96, 168);
+  ctx.moveTo(-88, -76);
+  ctx.bezierCurveTo(-118, -24, -106, 54, -84, 118);
+  ctx.bezierCurveTo(-58, 188, 56, 190, 84, 118);
+  ctx.bezierCurveTo(108, 54, 118, -26, 88, -76);
+  ctx.bezierCurveTo(54, -126, -54, -126, -88, -76);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  const skin = ctx.createLinearGradient(0, -34, 0, 166);
+  skin.addColorStop(0, "#ffe2d8");
+  skin.addColorStop(1, "#ffc1b4");
+  ctx.strokeStyle = skin;
+  ctx.lineWidth = 18;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(-66, 96);
+  ctx.bezierCurveTo(-92, 124, -74, 168, -22, 174 + breathe);
+  ctx.moveTo(66, 96);
+  ctx.bezierCurveTo(92, 124, 74, 168, 22, 174 + breathe);
+  ctx.stroke();
+
+  ctx.fillStyle = "#ffd8cc";
+  roundedRect(-17, 50, 34, 46, 16);
   ctx.fill();
 
-  ctx.fillStyle = "#8b4a38";
+  const dress = ctx.createLinearGradient(0, 78, 0, 216);
+  dress.addColorStop(0, "#fffdf8");
+  dress.addColorStop(0.46, "#ffeaf4");
+  dress.addColorStop(1, "#c9e7ff");
+  ctx.fillStyle = dress;
   ctx.beginPath();
-  ctx.ellipse(0, -36, 102, 116, 0, 0, Math.PI * 2);
+  ctx.moveTo(-118, 194);
+  ctx.bezierCurveTo(-98, 124, -54, 82, 0, 92);
+  ctx.bezierCurveTo(54, 82, 98, 124, 118, 194);
+  ctx.bezierCurveTo(66, 224, -66, 224, -118, 194);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.78)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,0.58)";
+  ctx.beginPath();
+  ctx.moveTo(-60, 103);
+  ctx.bezierCurveTo(-32, 128, 28, 128, 60, 103);
+  ctx.lineTo(72, 130);
+  ctx.bezierCurveTo(34, 158, -34, 158, -72, 130);
+  ctx.closePath();
   ctx.fill();
 
-  const hair = ctx.createRadialGradient(-34, -72, 16, 0, -36, 120);
-  hair.addColorStop(0, "#c67655");
-  hair.addColorStop(0.58, "#8d4d3e");
-  hair.addColorStop(1, "#4b2b31");
-  ctx.fillStyle = hair;
+  ctx.fillStyle = "#ffd9cc";
   ctx.beginPath();
-  ctx.ellipse(0, -28, 88, 104, 0.04, 0, Math.PI * 2);
+  ctx.ellipse(-62, -22, 11, 17, -0.2, 0, Math.PI * 2);
+  ctx.ellipse(62, -22, 11, 17, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-58, -36);
+  ctx.bezierCurveTo(-60, -94, 60, -94, 62, -34);
+  ctx.bezierCurveTo(66, 32, 35, 67, 0, 70);
+  ctx.bezierCurveTo(-36, 67, -66, 32, -58, -36);
   ctx.fill();
 
-  ctx.fillStyle = "#ffd8ca";
+  const frontHair = ctx.createLinearGradient(-82, -104, 74, 54);
+  frontHair.addColorStop(0, "#c87956");
+  frontHair.addColorStop(0.55, "#7a403d");
+  frontHair.addColorStop(1, "#3a2030");
+  ctx.fillStyle = frontHair;
   ctx.beginPath();
-  ctx.ellipse(0, -24, 66, 74, 0, 0, Math.PI * 2);
+  ctx.moveTo(-70, -46);
+  ctx.bezierCurveTo(-54, -106, 48, -122, 76, -58);
+  ctx.bezierCurveTo(44, -74, 8, -76, -32, -64);
+  ctx.bezierCurveTo(-48, -60, -60, -54, -70, -46);
   ctx.fill();
-
-  ctx.fillStyle = "#7a3d34";
   for (let i = -4; i <= 4; i += 1) {
+    const x = i * 13;
     ctx.beginPath();
-    ctx.ellipse(i * 13, -91 + Math.abs(i) * 3, 9, 38, i * 0.08, 0, Math.PI * 2);
+    ctx.moveTo(x - 8, -88 + Math.abs(i) * 2);
+    ctx.bezierCurveTo(x - 6, -58, x + 6, -42, x - 3, -22);
+    ctx.bezierCurveTo(x + 15, -46, x + 14, -68, x + 7, -88 + Math.abs(i) * 2);
+    ctx.closePath();
     ctx.fill();
   }
-  ctx.fillStyle = "#dff8ff";
-  ctx.beginPath();
-  ctx.ellipse(-58, -48, 14, 10, -0.5, 0, Math.PI * 2);
-  ctx.fill();
 
-  ctx.strokeStyle = "#5d3130";
-  ctx.lineWidth = 4;
+  ctx.strokeStyle = "rgba(236,169,113,0.55)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-58, -72);
+  ctx.bezierCurveTo(-92, -18, -72, 72, -42, 132);
+  ctx.moveTo(60, -62);
+  ctx.bezierCurveTo(94, -14, 72, 74, 42, 136);
+  ctx.stroke();
+
+  const clip = ctx.createLinearGradient(-72, -56, -42, -38);
+  clip.addColorStop(0, "#fff7ba");
+  clip.addColorStop(1, "#ffe18f");
+  ctx.fillStyle = clip;
+  ctx.beginPath();
+  ctx.moveTo(-73, -50);
+  ctx.quadraticCurveTo(-58, -70, -42, -50);
+  ctx.quadraticCurveTo(-57, -31, -73, -50);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.76)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.strokeStyle = "#4b2730";
+  ctx.lineWidth = 3.2;
   ctx.lineCap = "round";
   if (state.girlAwake) {
+    ctx.strokeStyle = "#3c2330";
     ctx.beginPath();
-    ctx.arc(-24, -24, 8, 0, Math.PI * 2);
-    ctx.arc(26, -24, 8, 0, Math.PI * 2);
+    ctx.arc(-24, -19, 14, Math.PI * 1.05, Math.PI * 1.95);
+    ctx.arc(26, -19, 14, Math.PI * 1.05, Math.PI * 1.95);
     ctx.stroke();
-    ctx.fillStyle = "#2b1c24";
+    ctx.fillStyle = "#2b1c27";
     ctx.beginPath();
-    ctx.arc(-24, -24, 4, 0, Math.PI * 2);
-    ctx.arc(26, -24, 4, 0, Math.PI * 2);
+    ctx.ellipse(-24, -18, 6, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(26, -18, 6, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(-26, -21, 2, 0, Math.PI * 2);
+    ctx.arc(24, -21, 2, 0, Math.PI * 2);
     ctx.fill();
   } else {
     ctx.beginPath();
-    ctx.arc(-24, -22, 15, 0.15, Math.PI - 0.15);
-    ctx.arc(26, -22, 15, 0.15, Math.PI - 0.15);
+    ctx.arc(-24, -18, 15, 0.1, Math.PI - 0.1);
+    ctx.arc(26, -18, 15, 0.1, Math.PI - 0.1);
     ctx.stroke();
   }
 
   ctx.strokeStyle = "#c95f72";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(2, 14, 20, 0.22, Math.PI - 0.22);
+  ctx.arc(2, 13, 18, 0.22, Math.PI - 0.22);
   ctx.stroke();
 
-  ctx.fillStyle = "rgba(255,157,181,0.35)";
+  ctx.fillStyle = "rgba(255,143,169,0.38)";
   ctx.beginPath();
-  ctx.ellipse(-42, 6, 16, 9, 0, 0, Math.PI * 2);
-  ctx.ellipse(42, 6, 16, 9, 0, 0, Math.PI * 2);
+  ctx.ellipse(-42, 8, 17, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(42, 8, 17, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "#ffd8ca";
-  ctx.lineWidth = 20;
-  ctx.beginPath();
-  ctx.moveTo(-58, 104);
-  ctx.quadraticCurveTo(-34, 142, -10, 150);
-  ctx.moveTo(58, 104);
-  ctx.quadraticCurveTo(34, 142, 10, 150);
-  ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  for (let i = -3; i <= 3; i += 1) {
+    ctx.beginPath();
+    ctx.arc(i * 18, 150 + Math.abs(i) * 4, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }
@@ -531,32 +610,108 @@ function drawBirthdayCake(cx, cy, time) {
 
   ctx.fillStyle = "rgba(0,0,0,0.32)";
   ctx.beginPath();
-  ctx.ellipse(0, 94, 132, 22, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 116, 170, 28, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = "#dff8ff";
-  roundedRect(-94, 12, 188, 86, 18);
+  const plate = ctx.createLinearGradient(0, 88, 0, 124);
+  plate.addColorStop(0, "#ffffff");
+  plate.addColorStop(0.55, "#eef8ff");
+  plate.addColorStop(1, "#98b3ff");
+  ctx.fillStyle = plate;
+  ctx.beginPath();
+  ctx.ellipse(0, 104, 146, 25, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.65)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const lower = ctx.createLinearGradient(0, 22, 0, 104);
+  lower.addColorStop(0, "#fff6fb");
+  lower.addColorStop(0.42, "#ffd5e7");
+  lower.addColorStop(1, "#f67fa1");
+  ctx.fillStyle = lower;
+  roundedRect(-112, 30, 224, 78, 20);
   ctx.fill();
 
-  ctx.fillStyle = "#ff9db5";
-  roundedRect(-94, 12, 188, 32, 18);
+  ctx.fillStyle = "rgba(255,255,255,0.26)";
+  ctx.fillRect(-88, 45, 176, 7);
+  ctx.fillRect(-88, 81, 176, 6);
+
+  const upper = ctx.createLinearGradient(0, -12, 0, 44);
+  upper.addColorStop(0, "#fffdf8");
+  upper.addColorStop(0.5, "#ffe7f1");
+  upper.addColorStop(1, "#ffb4cb");
+  ctx.fillStyle = upper;
+  roundedRect(-80, -8, 160, 58, 18);
   ctx.fill();
 
-  ctx.fillStyle = "#f6d58a";
-  for (let i = -3; i <= 3; i += 1) {
-    ctx.fillRect(i * 22 - 3, -30, 6, 42);
-    const flame = 1 + Math.sin(time * 0.006 + i) * 0.16;
-    ctx.fillStyle = "#fff1a8";
+  const cream = ctx.createLinearGradient(0, -34, 0, 24);
+  cream.addColorStop(0, "#ffffff");
+  cream.addColorStop(1, "#dff8ff");
+  ctx.fillStyle = cream;
+  roundedRect(-91, -28, 182, 34, 18);
+  ctx.fill();
+
+  ctx.fillStyle = "#fff9ff";
+  [-78, -44, -12, 18, 50, 80].forEach((x, i) => {
     ctx.beginPath();
-    ctx.ellipse(i * 22, -38, 7 * flame, 12 * flame, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, 7, 11 + (i % 2) * 3, 18, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#f6d58a";
+  });
+
+  ctx.fillStyle = "#ff6f91";
+  [-54, 0, 54].forEach((x) => {
+    ctx.beginPath();
+    ctx.moveTo(x, -35);
+    ctx.bezierCurveTo(x - 14, -52, x + 14, -52, x, -35);
+    ctx.bezierCurveTo(x + 18, -28, x + 10, -8, x, -2);
+    ctx.bezierCurveTo(x - 10, -8, x - 18, -28, x, -35);
+    ctx.fill();
+    ctx.fillStyle = "#ffe7f1";
+    ctx.beginPath();
+    ctx.arc(x + 5, -29, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ff6f91";
+  });
+
+  for (let i = -3; i <= 3; i += 1) {
+    const candle = ctx.createLinearGradient(i * 22 - 4, -78, i * 22 + 4, -30);
+    candle.addColorStop(0, "#fff7ba");
+    candle.addColorStop(1, i % 2 === 0 ? "#7bdff6" : "#ff9db5");
+    ctx.fillStyle = candle;
+    roundedRect(i * 22 - 4, -72, 8, 44, 4);
+    ctx.fill();
+    const flame = 1 + Math.sin(time * 0.006 + i) * 0.16;
+    const flameGradient = ctx.createRadialGradient(i * 22, -84, 1, i * 22, -84, 16);
+    flameGradient.addColorStop(0, "#ffffff");
+    flameGradient.addColorStop(0.45, "#fff1a8");
+    flameGradient.addColorStop(1, "#ff9d4d");
+    ctx.fillStyle = flameGradient;
+    ctx.beginPath();
+    ctx.ellipse(i * 22, -84, 7 * flame, 14 * flame, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  ctx.fillStyle = "#08111f";
-  ctx.font = "700 22px Microsoft YaHei, sans-serif";
+  ctx.fillStyle = "#5d3130";
+  ctx.font = "800 21px Microsoft YaHei, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("生日快乐", 0, 69);
+  ctx.fillText("生日快乐", 0, 79);
+
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  [-82, -42, 2, 42, 82].forEach((x) => {
+    ctx.beginPath();
+    ctx.arc(x, 93, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "rgba(123,223,246,0.8)";
+  for (let i = 0; i < 12; i += 1) {
+    const a = (Math.PI * 2 * i) / 12 + time * 0.001;
+    const r = 128 + Math.sin(time * 0.002 + i) * 5;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * r, 38 + Math.sin(a) * 26, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
