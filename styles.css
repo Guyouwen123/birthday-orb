@@ -1,13 +1,13 @@
 :root {
   color-scheme: dark;
-  --bg: #160f16;
-  --ink: #fff7ef;
-  --muted: rgba(255, 247, 239, 0.68);
-  --gold: #f4cf8c;
-  --blush: #f2a7a6;
-  --peach: #f6b783;
-  --mist: #a8c7d8;
-  --panel: rgba(34, 22, 28, 0.7);
+  --bg: #070915;
+  --ink: #f7fbff;
+  --muted: rgba(220, 232, 255, 0.7);
+  --gold: #f6d58a;
+  --nebula: #b88cff;
+  --cyan: #7bdff6;
+  --rose: #ff9db5;
+  --panel: rgba(8, 12, 28, 0.72);
 }
 
 * {
@@ -23,10 +23,10 @@ body {
   margin: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 42%, rgba(244, 207, 140, 0.2), transparent 28%),
-    radial-gradient(circle at 18% 18%, rgba(242, 167, 166, 0.2), transparent 30%),
-    radial-gradient(circle at 84% 72%, rgba(168, 199, 216, 0.16), transparent 34%),
-    linear-gradient(145deg, #20131c 0%, #171522 48%, #101a20 100%);
+    radial-gradient(circle at 48% 42%, rgba(123, 223, 246, 0.13), transparent 24%),
+    radial-gradient(circle at 18% 18%, rgba(184, 140, 255, 0.24), transparent 31%),
+    radial-gradient(circle at 84% 72%, rgba(255, 157, 181, 0.14), transparent 34%),
+    linear-gradient(145deg, #060713 0%, #0c1430 48%, #070a18 100%);
   color: var(--ink);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -45,10 +45,11 @@ button {
 
 .birthday-app::before {
   background-image:
-    radial-gradient(circle, rgba(255, 247, 239, 0.7) 0 1px, transparent 1.4px),
-    radial-gradient(circle, rgba(242, 167, 166, 0.45) 0 1px, transparent 1.5px);
-  background-position: 0 0, 52px 68px;
-  background-size: 118px 118px, 172px 172px;
+    radial-gradient(circle, rgba(247, 251, 255, 0.88) 0 1px, transparent 1.35px),
+    radial-gradient(circle, rgba(123, 223, 246, 0.54) 0 1px, transparent 1.45px),
+    radial-gradient(circle, rgba(246, 213, 138, 0.58) 0 1.2px, transparent 1.8px);
+  background-position: 0 0, 52px 68px, 104px 32px;
+  background-size: 92px 92px, 141px 141px, 217px 217px;
   content: "";
   inset: 0;
   animation: starDrift 26s linear infinite;
@@ -59,8 +60,8 @@ button {
 
 .birthday-app::after {
   background:
-    linear-gradient(90deg, transparent, rgba(244, 207, 140, 0.14), transparent),
-    linear-gradient(0deg, transparent, rgba(242, 167, 166, 0.11), transparent);
+    linear-gradient(92deg, transparent, rgba(123, 223, 246, 0.13), transparent),
+    linear-gradient(18deg, transparent, rgba(184, 140, 255, 0.14), transparent);
   content: "";
   inset: -28%;
   opacity: 0.44;
@@ -87,7 +88,7 @@ button {
 }
 
 .eyebrow {
-  color: #ffd9b4;
+  color: #bfefff;
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -108,8 +109,8 @@ h1 {
 
 .icon-button {
   align-items: center;
-  background: rgba(255, 247, 239, 0.1);
-  border: 1px solid rgba(255, 226, 207, 0.25);
+  background: rgba(220, 232, 255, 0.1);
+  border: 1px solid rgba(191, 239, 255, 0.25);
   border-radius: 8px;
   color: var(--ink);
   cursor: pointer;
@@ -122,16 +123,16 @@ h1 {
 
 .icon-button:hover,
 .icon-button:focus-visible {
-  background: rgba(255, 224, 207, 0.18);
-  border-color: rgba(255, 226, 207, 0.58);
+  background: rgba(123, 223, 246, 0.15);
+  border-color: rgba(191, 239, 255, 0.62);
   outline: none;
   transform: translateY(-1px);
 }
 
 .icon-button.is-on {
-  background: rgba(244, 207, 140, 0.22);
-  border-color: rgba(255, 228, 188, 0.72);
-  box-shadow: 0 0 24px rgba(242, 167, 166, 0.22);
+  background: rgba(123, 223, 246, 0.2);
+  border-color: rgba(191, 239, 255, 0.78);
+  box-shadow: 0 0 28px rgba(123, 223, 246, 0.24);
 }
 
 .camera-icon,
@@ -209,7 +210,7 @@ h1 {
 }
 
 .orb-shadow {
-  background: radial-gradient(ellipse, rgba(45, 22, 20, 0.54), transparent 68%);
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.58), transparent 68%);
   bottom: 5%;
   filter: blur(7px);
   height: 64px;
@@ -222,9 +223,9 @@ h1 {
   align-items: center;
   background: var(--panel);
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 226, 207, 0.24);
+  border: 1px solid rgba(191, 239, 255, 0.22);
   border-radius: 8px;
-  box-shadow: 0 24px 80px rgba(49, 22, 20, 0.34);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
   display: grid;
   gap: 10px;
   grid-template-columns: auto minmax(0, 1fr);
@@ -250,9 +251,9 @@ h1 {
 
 .selected-glyph {
   align-items: center;
-  background: linear-gradient(145deg, #ffe4bc, #f4cf8c);
+  background: linear-gradient(145deg, #dff8ff, #f6d58a);
   border-radius: 6px;
-  color: #18110b;
+  color: #08111f;
   display: grid;
   font-size: 1.7rem;
   font-weight: 950;
@@ -292,12 +293,12 @@ h1 {
 }
 
 .finger-dot {
-  background: #ffe4bc;
-  border: 2px solid rgba(61, 36, 34, 0.86);
+  background: #dff8ff;
+  border: 2px solid rgba(8, 17, 31, 0.86);
   border-radius: 50%;
   box-shadow:
-    0 0 0 8px rgba(244, 207, 140, 0.2),
-    0 0 30px rgba(242, 167, 166, 0.46);
+    0 0 0 8px rgba(123, 223, 246, 0.18),
+    0 0 30px rgba(184, 140, 255, 0.42);
   height: 18px;
   opacity: 0;
   pointer-events: none;
@@ -314,11 +315,11 @@ h1 {
 
 @keyframes starDrift {
   from {
-    background-position: 0 0, 52px 68px;
+    background-position: 0 0, 52px 68px, 104px 32px;
   }
 
   to {
-    background-position: 118px 236px, 224px 344px;
+    background-position: 92px 184px, 193px 350px, 321px 466px;
   }
 }
 

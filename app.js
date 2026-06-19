@@ -31,7 +31,19 @@ const blessings = [
   ["燃", "愿你继续热烈，继续发光，继续被爱。"]
 ];
 
-const palette = ["#f4cf8c", "#f2a7a6", "#f6b783", "#a8c7d8", "#f8d9d0", "#c8d9b0", "#f0b7cf", "#b8d7cf"];
+const palette = ["#f6d58a", "#7bdff6", "#b88cff", "#ff9db5", "#8ee6c8", "#dff8ff", "#aeb8ff", "#f4b6ff"];
+const stars = Array.from({ length: 140 }, (_, index) => {
+  const seed = Math.sin(index * 127.1) * 10000;
+  const seed2 = Math.sin(index * 311.7) * 10000;
+  const seed3 = Math.sin(index * 71.3) * 10000;
+  return {
+    x: seed - Math.floor(seed),
+    y: seed2 - Math.floor(seed2),
+    size: 0.7 + (seed3 - Math.floor(seed3)) * 1.8,
+    drift: 0.25 + ((seed + seed2) % 1) * 0.75,
+    twinkle: index * 0.43
+  };
+});
 const canvas = document.querySelector("#orbCanvas");
 const ctx = canvas.getContext("2d");
 const orbWrap = document.querySelector("#orbWrap");
@@ -267,17 +279,27 @@ function drawBackground(time) {
   const cx = state.width / 2 + state.pointer.x * 0.15;
   const cy = state.height / 2 + state.pointer.y * 0.12;
   const glow = ctx.createRadialGradient(cx, cy, state.radius * 0.18, cx, cy, state.radius * 1.22);
-  glow.addColorStop(0, "rgba(244,207,140,0.2)");
-  glow.addColorStop(0.42, "rgba(242,167,166,0.12)");
-  glow.addColorStop(0.72, "rgba(168,199,216,0.08)");
+  glow.addColorStop(0, "rgba(123,223,246,0.22)");
+  glow.addColorStop(0.42, "rgba(184,140,255,0.14)");
+  glow.addColorStop(0.72, "rgba(246,213,138,0.08)");
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, state.width, state.height);
 
+  stars.forEach((star) => {
+    const x = (star.x * state.width + time * 0.006 * star.drift + state.pointer.x * 0.22) % state.width;
+    const y = (star.y * state.height + time * 0.003 * star.drift + state.pointer.y * 0.18) % state.height;
+    const alpha = 0.28 + Math.sin(time * 0.002 + star.twinkle) * 0.18;
+    ctx.fillStyle = `rgba(235, 247, 255, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(x, y, star.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(time * 0.00008);
-  ctx.strokeStyle = "rgba(255,216,180,0.14)";
+  ctx.strokeStyle = "rgba(123,223,246,0.18)";
   ctx.lineWidth = 1;
   for (let i = 0; i < 4; i += 1) {
     ctx.beginPath();
@@ -292,17 +314,17 @@ function drawCore(time) {
   const cy = state.height / 2 + state.pointer.y * 0.08;
   const pulse = 1 + Math.sin(time * 0.0017) * 0.02;
   const gradient = ctx.createRadialGradient(cx - state.radius * 0.25, cy - state.radius * 0.3, state.radius * 0.1, cx, cy, state.radius * 1.02);
-  gradient.addColorStop(0, "rgba(255,255,255,0.18)");
-  gradient.addColorStop(0.35, "rgba(244,207,140,0.11)");
-  gradient.addColorStop(0.62, "rgba(242,167,166,0.08)");
-  gradient.addColorStop(0.82, "rgba(168,199,216,0.06)");
+  gradient.addColorStop(0, "rgba(255,255,255,0.2)");
+  gradient.addColorStop(0.35, "rgba(123,223,246,0.12)");
+  gradient.addColorStop(0.62, "rgba(184,140,255,0.1)");
+  gradient.addColorStop(0.82, "rgba(246,213,138,0.06)");
   gradient.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.arc(cx, cy, state.radius * pulse, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = "rgba(246,225,181,0.18)";
+  ctx.strokeStyle = "rgba(191,239,255,0.2)";
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.arc(cx, cy, state.radius * 0.98, 0, Math.PI * 2);
@@ -336,7 +358,7 @@ function drawPiece(piece, view, index, time) {
   ctx.fillStyle = face;
   ctx.fill();
 
-  ctx.strokeStyle = active ? "rgba(255,238,214,0.92)" : "rgba(255,235,219,0.36)";
+  ctx.strokeStyle = active ? "rgba(223,248,255,0.95)" : "rgba(191,239,255,0.34)";
   ctx.lineWidth = active ? 2 : 0.9;
   ctx.stroke();
 
@@ -354,14 +376,14 @@ function drawPiece(piece, view, index, time) {
   if (active) {
     ctx.save();
     drawSoftShape(points);
-    ctx.shadowColor = "rgba(255,190,178,0.72)";
+    ctx.shadowColor = "rgba(123,223,246,0.7)";
     ctx.shadowBlur = 30;
-    ctx.strokeStyle = "rgba(255,238,214,0.86)";
+    ctx.strokeStyle = "rgba(223,248,255,0.88)";
     ctx.stroke();
     ctx.restore();
   }
 
-  ctx.fillStyle = "rgba(61,36,34,0.88)";
+  ctx.fillStyle = "rgba(8,17,31,0.9)";
   ctx.font = `${Math.max(18, size * 0.66)}px Microsoft YaHei, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
