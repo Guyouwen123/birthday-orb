@@ -50,9 +50,22 @@ button {
   background-size: 118px 118px, 172px 172px;
   content: "";
   inset: 0;
-  opacity: 0.2;
+  animation: starDrift 26s linear infinite;
+  opacity: 0.24;
   pointer-events: none;
   position: absolute;
+}
+
+.birthday-app::after {
+  background:
+    linear-gradient(90deg, transparent, rgba(217, 181, 111, 0.14), transparent),
+    linear-gradient(0deg, transparent, rgba(159, 178, 199, 0.08), transparent);
+  content: "";
+  inset: -28%;
+  opacity: 0.44;
+  pointer-events: none;
+  position: absolute;
+  transform: rotate(-18deg) translateX(var(--parallax-x, 0px));
 }
 
 .stage {
@@ -180,10 +193,20 @@ h1 {
 }
 
 .orb {
+  filter: drop-shadow(calc(var(--parallax-x, 0px) * 0.08) 34px 54px rgba(0, 0, 0, 0.42));
   height: min(68vw, 570px);
   position: relative;
+  transform:
+    rotateX(calc(var(--parallax-y, 0px) * -0.012deg))
+    rotateY(calc(var(--parallax-x, 0px) * 0.012deg));
   transform-style: preserve-3d;
+  transition: filter 260ms ease, transform 260ms ease;
   width: min(68vw, 570px);
+}
+
+.orb-wrap.dragging .orb {
+  filter: drop-shadow(calc(var(--parallax-x, 0px) * 0.08) 42px 70px rgba(0, 0, 0, 0.5));
+  transition-duration: 80ms;
 }
 
 .orb::before {
@@ -195,7 +218,9 @@ h1 {
   content: "";
   filter: blur(0.2px);
   inset: 1%;
+  opacity: 0.88;
   position: absolute;
+  transform: scale(var(--pulse-scale, 1));
 }
 
 .orb::after {
@@ -208,6 +233,7 @@ h1 {
   mix-blend-mode: screen;
   pointer-events: none;
   position: absolute;
+  transform: rotate(var(--scan-angle, 0deg));
 }
 
 .orb-shadow {
@@ -246,12 +272,13 @@ h1 {
   top: 50%;
   transform:
     translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 0)
-    scale(var(--scale));
+    scale(var(--scale))
+    rotate(calc(var(--tilt) * 1deg));
   transition:
     clip-path 220ms ease,
     filter 220ms ease,
     opacity 220ms ease,
-    transform 220ms ease;
+    transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.15);
   width: var(--tile-size);
   z-index: var(--z);
 }
@@ -265,6 +292,15 @@ h1 {
   position: absolute;
   transform: translateZ(-1px);
   z-index: -1;
+}
+
+.tile::after {
+  background: linear-gradient(125deg, transparent 18%, rgba(255, 255, 255, 0.42) 42%, transparent 58%);
+  content: "";
+  inset: 0;
+  opacity: var(--glint-opacity, 0);
+  position: absolute;
+  transform: translateX(var(--glint-x, -55%));
 }
 
 .tile.hex {
@@ -291,7 +327,8 @@ h1 {
   filter: saturate(1.12) brightness(1.16) drop-shadow(0 0 22px rgba(217, 181, 111, 0.32));
   transform:
     translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 0)
-    scale(calc(var(--scale) * 1.48));
+    scale(calc(var(--scale) * 1.58))
+    rotate(calc(var(--tilt) * 1deg));
   z-index: 900;
 }
 
@@ -317,13 +354,17 @@ h1 {
   position: absolute;
   top: 50%;
   transform: translateY(72px) scale(0.96);
-  transition: opacity 220ms ease, transform 220ms ease;
+  transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2, 0.9, 0.2, 1.2);
   z-index: 1000;
 }
 
 .selection-card.is-visible {
   opacity: 1;
   transform: translateY(98px) scale(1);
+}
+
+.selection-card.is-popping {
+  transform: translateY(90px) scale(1.04);
 }
 
 .selected-glyph {
@@ -393,6 +434,16 @@ h1 {
 
 .finger-dot.is-on {
   opacity: 1;
+}
+
+@keyframes starDrift {
+  from {
+    background-position: 0 0, 52px 68px;
+  }
+
+  to {
+    background-position: 118px 236px, 224px 344px;
+  }
 }
 
 .hint-row {

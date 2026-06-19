@@ -51,6 +51,10 @@ const state = {
   rotationY: 0.35,
   velocityX: 0,
   velocityY: 0,
+  pointerX: 0,
+  pointerY: 0,
+  targetPointerX: 0,
+  targetPointerY: 0,
   radius: 230,
   activeIndex: 0,
   dragging: false,
@@ -60,7 +64,8 @@ const state = {
   handDetector: null,
   cameraStream: null,
   cameraOn: false,
-  lastGesturePick: 0
+  lastGesturePick: 0,
+  lastSelectedAt: 0
 };
 
 function fibonacciSphere(count) {
@@ -117,6 +122,16 @@ function rotatePoint(point) {
 function renderOrb() {
   const rect = orb.getBoundingClientRect();
   state.radius = Math.min(rect.width, rect.height) * 0.42;
+  const now = performance.now();
+  const pulse = 1 + Math.sin(now * 0.0018) * 0.018;
+  const scanAngle = (now * 0.018) % 360;
+
+  state.pointerX += (state.targetPointerX - state.pointerX) * 0.08;
+  state.pointerY += (state.targetPointerY - state.pointerY) * 0.08;
+  document.documentElement.style.setProperty("--parallax-x", `${state.pointerX}px`);
+  document.documentElement.style.setProperty("--parallax-y", `${state.pointerY}px`);
+  orb.style.setProperty("--pulse-scale", pulse.toFixed(3));
+  orb.style.setProperty("--scan-angle", `${scanAngle.toFixed(1)}deg`);
 
   state.tiles.forEach((tile, index) => {
     const rotated = rotatePoint(tile.point);
@@ -127,6 +142,10 @@ function renderOrb() {
     const depthScale = 0.62 + perspective * 0.58;
     const visible = rotated.z > -0.78;
     const sideOpacity = Math.max(0.2, Math.min(0.72, 0.72 - rotated.z * 0.26));
+    const tilt = rotated.x * 8 + rotated.y * 4;
+    const glintPhase = Math.sin(now * 0.0024 + index * 0.7);
+    const glintOpacity = Math.max(0, glintPhase - 0.72) * (rotated.z + 1) * 0.38;
+    const glintX = -70 + ((now * 0.018 + index * 17) % 140);
 
     tile.screenX = rect.left + rect.width / 2 + x;
     tile.screenY = rect.top + rect.height / 2 + y;
@@ -137,6 +156,9 @@ function renderOrb() {
     tile.element.style.setProperty("--tile-size", `${size}px`);
     tile.element.style.setProperty("--z", Math.round((rotated.z + 1) * 200));
     tile.element.style.setProperty("--side-opacity", sideOpacity);
+    tile.element.style.setProperty("--tilt", tilt.toFixed(2));
+    tile.element.style.setProperty("--glint-opacity", glintOpacity.toFixed(3));
+    tile.element.style.setProperty("--glint-x", `${glintX.toFixed(1)}%`);
     tile.element.classList.toggle("is-hidden", !visible);
     tile.element.classList.toggle("is-active", index === state.activeIndex);
     tile.element.classList.toggle("is-dim", index !== state.activeIndex && rotated.z < -0.12);
@@ -161,10 +183,20 @@ function selectTile(index, settleVelocity) {
   const tile = state.tiles[index];
   if (!tile || !tile.visible) return;
 
+  const changed = state.activeIndex !== index;
   state.activeIndex = index;
   selectedGlyph.textContent = tile.element.dataset.glyph;
   selectedMessage.textContent = tile.element.dataset.message;
   selectionCard.classList.add("is-visible");
+
+  if (changed || performance.now() - state.lastSelectedAt > 650) {
+    selectionCard.classList.remove("is-popping");
+    requestAnimationFrame(() => {
+      selectionCard.classList.add("is-popping");
+      window.setTimeout(() => selectionCard.classList.remove("is-popping"), 180);
+    });
+    state.lastSelectedAt = performance.now();
+  }
 
   if (settleVelocity) {
     state.velocityX *= 0.4;
@@ -194,11 +226,13 @@ function onPointerDown(event) {
   state.lastPointer.y = event.clientY;
   state.velocityX = 0;
   state.velocityY = 0;
+  updateParallax(event.clientX, event.clientY);
   orbWrap.classList.add("dragging");
   orbWrap.setPointerCapture(event.pointerId);
 }
 
 function onPointerMove(event) {
+  updateParallax(event.clientX, event.clientY);
   if (!state.dragging) {
     const nearest = findNearestTile(event.clientX, event.clientY, 54);
     if (nearest >= 0) selectTile(nearest, false);
@@ -229,6 +263,12 @@ function shuffleBlessings() {
   buildOrb(mixed);
   statusText.textContent = "祝福已经重新排布。";
   state.velocityY = 0;
+}
+
+function updateParallax(clientX, clientY) {
+  const rect = orbWrap.getBoundingClientRect();
+  state.targetPointerX = ((clientX - rect.left) / rect.width - 0.5) * 42;
+  state.targetPointerY = ((clientY - rect.top) / rect.height - 0.5) * 42;
 }
 
 function loadScript(src) {
