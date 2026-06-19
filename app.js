@@ -51,10 +51,8 @@ const state = {
   width: 0,
   height: 0,
   radius: 230,
-  rotationX: -0.24,
-  rotationY: 0.4,
-  targetX: -0.24,
-  targetY: 0.4,
+  orientation: null,
+  targetOrientation: null,
   dragStart: null,
   activeIndex: 0,
   pieces: [],
@@ -111,34 +109,105 @@ function resize() {
   state.radius = Math.min(state.width, state.height) * 0.34;
 }
 
-function rotate(point) {
-  const cosY = Math.cos(state.rotationY);
-  const sinY = Math.sin(state.rotationY);
-  const cosX = Math.cos(state.rotationX);
-  const sinX = Math.sin(state.rotationX);
-  const x1 = point.x * cosY - point.z * sinY;
-  const z1 = point.x * sinY + point.z * cosY;
-  const y1 = point.y * cosX - z1 * sinX;
-  const z2 = point.y * sinX + z1 * cosX;
-  return { x: x1, y: y1, z: z2 };
+function quatNormalize(q) {
+  const length = Math.hypot(q.x, q.y, q.z, q.w) || 1;
+  return { x: q.x / length, y: q.y / length, z: q.z / length, w: q.w / length };
 }
 
-function shortestAngle(current, target) {
-  const turn = Math.PI * 2;
-  return current + ((((target - current) % turn) + Math.PI * 3) % turn) - Math.PI;
+function quatMultiply(a, b) {
+  return {
+    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z
+  };
+}
+
+function quatFromAxisAngle(axis, angle) {
+  const half = angle / 2;
+  const s = Math.sin(half);
+  return quatNormalize({ x: axis.x * s, y: axis.y * s, z: axis.z * s, w: Math.cos(half) });
+}
+
+function quatFromUnitVectors(from, to) {
+  const dot = from.x * to.x + from.y * to.y + from.z * to.z;
+  if (dot < -0.999999) {
+    const axis = Math.abs(from.x) > 0.1 ? { x: -from.y, y: from.x, z: 0 } : { x: 0, y: -from.z, z: from.y };
+    return quatFromAxisAngle(quatNormalize({ ...axis, w: 0 }), Math.PI);
+  }
+  return quatNormalize({
+    x: from.y * to.z - from.z * to.y,
+    y: from.z * to.x - from.x * to.z,
+    z: from.x * to.y - from.y * to.x,
+    w: 1 + dot
+  });
+}
+
+function quatSlerp(a, b, amount) {
+  let cos = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+  let target = b;
+  if (cos < 0) {
+    cos = -cos;
+    target = { x: -b.x, y: -b.y, z: -b.z, w: -b.w };
+  }
+  if (cos > 0.9995) {
+    return quatNormalize({
+      x: a.x + (target.x - a.x) * amount,
+      y: a.y + (target.y - a.y) * amount,
+      z: a.z + (target.z - a.z) * amount,
+      w: a.w + (target.w - a.w) * amount
+    });
+  }
+  const theta = Math.acos(cos);
+  const sinTheta = Math.sin(theta);
+  const aScale = Math.sin((1 - amount) * theta) / sinTheta;
+  const bScale = Math.sin(amount * theta) / sinTheta;
+  return {
+    x: a.x * aScale + target.x * bScale,
+    y: a.y * aScale + target.y * bScale,
+    z: a.z * aScale + target.z * bScale,
+    w: a.w * aScale + target.w * bScale
+  };
+}
+
+function applyQuat(point, q = state.orientation) {
+  const x = point.x;
+  const y = point.y;
+  const z = point.z;
+  const qx = q.x;
+  const qy = q.y;
+  const qz = q.z;
+  const qw = q.w;
+  const ix = qw * x + qy * z - qz * y;
+  const iy = qw * y + qz * x - qx * z;
+  const iz = qw * z + qx * y - qy * x;
+  const iw = -qx * x - qy * y - qz * z;
+
+  return {
+    x: ix * qw + iw * -qx + iy * -qz - iz * -qy,
+    y: iy * qw + iw * -qy + iz * -qx - ix * -qz,
+    z: iz * qw + iw * -qz + ix * -qy - iy * -qx
+  };
+}
+
+function trackballVector(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const x = ((clientX - rect.left) / rect.width - 0.5) * 2;
+  const y = ((clientY - rect.top) / rect.height - 0.5) * 2;
+  const length = x * x + y * y;
+  const z = length > 1 ? 0 : Math.sqrt(1 - length);
+  return quatNormalize({ x, y, z, w: 0 });
+}
+
+function rotate(point) {
+  return applyQuat(point);
 }
 
 function centerPiece(index) {
   const piece = state.pieces[index];
   if (!piece) return;
 
-  const { x, y, z } = piece.normal;
-  const targetY = Math.atan2(x, z);
-  const horizontal = Math.hypot(x, z);
-  const targetX = Math.atan2(y, horizontal);
-
-  state.targetY = shortestAngle(state.targetY, targetY);
-  state.targetX = shortestAngle(state.targetX, targetX);
+  state.targetOrientation = quatFromUnitVectors(piece.normal, { x: 0, y: 0, z: 1 });
 }
 
 function project(point, lift = 0) {
@@ -243,7 +312,7 @@ function drawPiece(piece, view, index, time) {
   const shade = -18 + light * 72;
   const alpha = Math.max(0, Math.min(1, (view.z + 0.86) / 1.86));
   const size = state.radius * (active ? 0.17 : 0.118) * projected.scale * (1 + Math.sin(time * 0.002 + piece.phase) * 0.04);
-  const angle = piece.phase + state.rotationY * 0.42 + Math.sin(time * 0.0012 + piece.phase) * 0.18;
+  const angle = piece.phase + Math.atan2(view.x, view.z) * 0.42 + Math.sin(time * 0.0012 + piece.phase) * 0.18;
   const points = petalPoints(projected.x, projected.y, size, piece.lobes, angle, piece.phase);
   const thickness = Math.max(4, size * 0.14) * projected.scale;
   const sidePoints = petalPoints(projected.x + thickness, projected.y + thickness * 0.72, size * 0.98, piece.lobes, angle, piece.phase);
@@ -304,8 +373,7 @@ function drawPiece(piece, view, index, time) {
 }
 
 function render(time = 0) {
-  state.rotationX += (state.targetX - state.rotationX) * 0.12;
-  state.rotationY += (state.targetY - state.rotationY) * 0.12;
+  state.orientation = quatSlerp(state.orientation, state.targetOrientation, 0.13);
   state.pointer.x += (state.targetPointer.x - state.pointer.x) * 0.08;
   state.pointer.y += (state.targetPointer.y - state.pointer.y) * 0.08;
 
@@ -379,8 +447,8 @@ canvas.addEventListener("pointerdown", (event) => {
     localX: point.x,
     localY: point.y,
     moved: false,
-    rotationX: state.targetX,
-    rotationY: state.targetY
+    vector: trackballVector(event.clientX, event.clientY),
+    orientation: state.targetOrientation
   };
   updatePointer(event.clientX, event.clientY);
   canvas.setPointerCapture(event.pointerId);
@@ -394,8 +462,9 @@ canvas.addEventListener("pointermove", (event) => {
     const dx = event.clientX - state.dragStart.clientX;
     const dy = event.clientY - state.dragStart.clientY;
     if (Math.hypot(dx, dy) > 6) state.dragStart.moved = true;
-    state.targetY = state.dragStart.rotationY - dx * 0.009;
-    state.targetX = state.dragStart.rotationX - dy * 0.009;
+    const currentVector = trackballVector(event.clientX, event.clientY);
+    const delta = quatFromUnitVectors(state.dragStart.vector, currentVector);
+    state.targetOrientation = quatMultiply(delta, state.dragStart.orientation);
     return;
   }
   const pick = nearestPiece(point.x, point.y, 54);
@@ -517,8 +586,9 @@ async function detectHands() {
         const dx = normalizedX - state.lastFinger.x;
         const dy = normalizedY - state.lastFinger.y;
         if (Math.abs(dx) + Math.abs(dy) < 0.22) {
-          state.targetY -= dx * 3.2;
-          state.targetX -= dy * 3.2;
+          const xTurn = quatFromAxisAngle({ x: 0, y: 1, z: 0 }, -dx * 3.4);
+          const yTurn = quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -dy * 3.4);
+          state.targetOrientation = quatMultiply(yTurn, quatMultiply(xTurn, state.targetOrientation));
         }
       }
       state.lastFinger = { x: normalizedX, y: normalizedY };
@@ -546,5 +616,10 @@ cameraButton.addEventListener("click", startCameraGesture);
 window.addEventListener("resize", resize);
 
 resize();
+state.orientation = quatMultiply(
+  quatFromAxisAngle({ x: 0, y: 1, z: 0 }, 0.4),
+  quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -0.24)
+);
+state.targetOrientation = state.orientation;
 buildPieces();
 requestAnimationFrame(render);
