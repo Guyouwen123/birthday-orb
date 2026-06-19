@@ -31,7 +31,7 @@ const blessings = [
   ["燃", "愿你继续热烈，继续发光，继续被爱。"]
 ];
 
-const palette = ["#d9b56f", "#aeb9c7", "#c98c4a", "#758da4", "#d5c4a4", "#93a783", "#b97861", "#8693ad"];
+const palette = ["#f4cf8c", "#f2a7a6", "#f6b783", "#a8c7d8", "#f8d9d0", "#c8d9b0", "#f0b7cf", "#b8d7cf"];
 const canvas = document.querySelector("#orbCanvas");
 const ctx = canvas.getContext("2d");
 const orbWrap = document.querySelector("#orbWrap");
@@ -91,7 +91,7 @@ function buildPieces(items = blessings) {
     normal,
     glyph: items[index][0],
     message: items[index][1],
-    sides: index % 5 === 0 ? 5 : 6,
+    lobes: 5 + (index % 4),
     color: palette[index % palette.length],
     phase: index * 0.71
   }));
@@ -144,18 +144,26 @@ function lighten(hex, amount) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function polygonPoints(cx, cy, radius, sides, angle) {
-  return Array.from({ length: sides }, (_, index) => {
-    const theta = angle + (Math.PI * 2 * index) / sides;
-    return [cx + Math.cos(theta) * radius, cy + Math.sin(theta) * radius];
+function petalPoints(cx, cy, radius, lobes, angle, phase) {
+  const total = lobes * 2;
+  return Array.from({ length: total }, (_, index) => {
+    const theta = angle + (Math.PI * 2 * index) / total;
+    const wave = index % 2 === 0 ? 1.08 : 0.72;
+    const organic = 1 + Math.sin(index * 1.7 + phase) * 0.07;
+    const rx = radius * wave * organic;
+    const ry = radius * (0.86 + Math.cos(phase) * 0.06) * wave;
+    return [cx + Math.cos(theta) * rx, cy + Math.sin(theta) * ry];
   });
 }
 
-function drawPolygon(points) {
+function drawSoftShape(points) {
   ctx.beginPath();
-  points.forEach(([x, y], index) => {
-    if (index === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+  points.forEach((point, index) => {
+    const next = points[(index + 1) % points.length];
+    const midX = (point[0] + next[0]) / 2;
+    const midY = (point[1] + next[1]) / 2;
+    if (index === 0) ctx.moveTo(midX, midY);
+    ctx.quadraticCurveTo(next[0], next[1], (next[0] + points[(index + 2) % points.length][0]) / 2, (next[1] + points[(index + 2) % points.length][1]) / 2);
   });
   ctx.closePath();
 }
@@ -166,8 +174,9 @@ function drawBackground(time) {
   const cx = state.width / 2 + state.pointer.x * 0.15;
   const cy = state.height / 2 + state.pointer.y * 0.12;
   const glow = ctx.createRadialGradient(cx, cy, state.radius * 0.18, cx, cy, state.radius * 1.22);
-  glow.addColorStop(0, "rgba(217,181,111,0.16)");
-  glow.addColorStop(0.48, "rgba(95,116,142,0.08)");
+  glow.addColorStop(0, "rgba(244,207,140,0.2)");
+  glow.addColorStop(0.42, "rgba(242,167,166,0.12)");
+  glow.addColorStop(0.72, "rgba(168,199,216,0.08)");
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, state.width, state.height);
@@ -175,7 +184,7 @@ function drawBackground(time) {
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(time * 0.00008);
-  ctx.strokeStyle = "rgba(217,181,111,0.13)";
+  ctx.strokeStyle = "rgba(255,216,180,0.14)";
   ctx.lineWidth = 1;
   for (let i = 0; i < 4; i += 1) {
     ctx.beginPath();
@@ -191,8 +200,9 @@ function drawCore(time) {
   const pulse = 1 + Math.sin(time * 0.0017) * 0.02;
   const gradient = ctx.createRadialGradient(cx - state.radius * 0.25, cy - state.radius * 0.3, state.radius * 0.1, cx, cy, state.radius * 1.02);
   gradient.addColorStop(0, "rgba(255,255,255,0.18)");
-  gradient.addColorStop(0.38, "rgba(217,181,111,0.08)");
-  gradient.addColorStop(0.7, "rgba(83,98,117,0.06)");
+  gradient.addColorStop(0.35, "rgba(244,207,140,0.11)");
+  gradient.addColorStop(0.62, "rgba(242,167,166,0.08)");
+  gradient.addColorStop(0.82, "rgba(168,199,216,0.06)");
   gradient.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = gradient;
   ctx.beginPath();
@@ -208,46 +218,57 @@ function drawCore(time) {
 
 function drawPiece(piece, view, index, time) {
   const active = index === state.activeIndex;
-  const lift = active ? 42 : 8;
+  const lift = active ? 48 : 10 + Math.sin(time * 0.0018 + piece.phase) * 4;
   const projected = project(view, lift);
-  const light = Math.max(0, view.x * -0.25 + view.y * -0.34 + view.z * 0.92);
-  const shade = -42 + light * 88;
+  const light = Math.max(0, view.x * -0.18 + view.y * -0.32 + view.z * 0.92);
+  const shade = -18 + light * 72;
   const alpha = Math.max(0, Math.min(1, (view.z + 0.86) / 1.86));
-  const size = state.radius * (active ? 0.18 : 0.128) * projected.scale;
-  const angle = piece.phase + state.rotationY * 0.5 + time * 0.00018;
-  const points = polygonPoints(projected.x, projected.y, size, piece.sides, angle);
-  const thickness = Math.max(5, size * 0.18) * projected.scale;
-  const sidePoints = polygonPoints(projected.x + thickness, projected.y + thickness, size, piece.sides, angle);
+  const size = state.radius * (active ? 0.17 : 0.118) * projected.scale * (1 + Math.sin(time * 0.002 + piece.phase) * 0.04);
+  const angle = piece.phase + state.rotationY * 0.42 + Math.sin(time * 0.0012 + piece.phase) * 0.18;
+  const points = petalPoints(projected.x, projected.y, size, piece.lobes, angle, piece.phase);
+  const thickness = Math.max(4, size * 0.14) * projected.scale;
+  const sidePoints = petalPoints(projected.x + thickness, projected.y + thickness * 0.72, size * 0.98, piece.lobes, angle, piece.phase);
 
   ctx.globalAlpha = alpha;
 
-  drawPolygon(sidePoints);
-  ctx.fillStyle = "rgba(10,12,16,0.56)";
+  drawSoftShape(sidePoints);
+  ctx.fillStyle = "rgba(74,35,38,0.3)";
   ctx.fill();
 
-  drawPolygon(points);
-  const face = ctx.createLinearGradient(projected.x - size, projected.y - size, projected.x + size, projected.y + size);
-  face.addColorStop(0, lighten(piece.color, Math.round(shade + 50)));
-  face.addColorStop(0.48, lighten(piece.color, Math.round(shade)));
-  face.addColorStop(1, lighten(piece.color, Math.round(shade - 34)));
+  drawSoftShape(points);
+  const face = ctx.createRadialGradient(projected.x - size * 0.35, projected.y - size * 0.42, size * 0.12, projected.x, projected.y, size * 1.15);
+  face.addColorStop(0, lighten(piece.color, Math.round(shade + 70)));
+  face.addColorStop(0.42, lighten(piece.color, Math.round(shade + 14)));
+  face.addColorStop(1, lighten(piece.color, Math.round(shade - 24)));
   ctx.fillStyle = face;
   ctx.fill();
 
-  ctx.strokeStyle = active ? "rgba(255,232,181,0.92)" : "rgba(255,244,218,0.32)";
-  ctx.lineWidth = active ? 2.2 : 1;
+  ctx.strokeStyle = active ? "rgba(255,238,214,0.92)" : "rgba(255,235,219,0.36)";
+  ctx.lineWidth = active ? 2 : 0.9;
   ctx.stroke();
+
+  ctx.save();
+  drawSoftShape(points);
+  ctx.clip();
+  const shine = ctx.createLinearGradient(projected.x - size, projected.y - size, projected.x + size, projected.y);
+  shine.addColorStop(0, "rgba(255,255,255,0)");
+  shine.addColorStop(0.48, `rgba(255,255,255,${active ? 0.36 : 0.18})`);
+  shine.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(projected.x - size, projected.y - size, size * 2, size * 2);
+  ctx.restore();
 
   if (active) {
     ctx.save();
-    drawPolygon(points);
-    ctx.shadowColor = "rgba(217,181,111,0.72)";
-    ctx.shadowBlur = 26;
-    ctx.strokeStyle = "rgba(255,232,181,0.84)";
+    drawSoftShape(points);
+    ctx.shadowColor = "rgba(255,190,178,0.72)";
+    ctx.shadowBlur = 30;
+    ctx.strokeStyle = "rgba(255,238,214,0.86)";
     ctx.stroke();
     ctx.restore();
   }
 
-  ctx.fillStyle = "rgba(24,17,11,0.92)";
+  ctx.fillStyle = "rgba(61,36,34,0.88)";
   ctx.font = `${Math.max(18, size * 0.66)}px Microsoft YaHei, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
