@@ -68,6 +68,7 @@ const state = {
   detectingHands: false,
   audioContext: null,
   musicTimers: [],
+  musicNodes: [],
   musicPlaying: false
 };
 
@@ -495,6 +496,20 @@ canvas.addEventListener("pointercancel", () => {
 function stopBirthdaySong() {
   state.musicTimers.forEach((timer) => window.clearTimeout(timer));
   state.musicTimers = [];
+  if (state.audioContext) {
+    const now = state.audioContext.currentTime;
+    state.musicNodes.forEach(({ oscillator, gain }) => {
+      try {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value || 0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        oscillator.stop(now + 0.05);
+      } catch (error) {
+        // Already stopped nodes can be ignored.
+      }
+    });
+  }
+  state.musicNodes = [];
   state.musicPlaying = false;
   musicButton.classList.remove("is-on");
   musicButton.setAttribute("aria-label", "播放生日快乐歌");
@@ -514,6 +529,10 @@ function playTone(frequency, startTime, duration) {
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
   oscillator.start(startTime);
   oscillator.stop(startTime + duration + 0.03);
+  state.musicNodes.push({ oscillator, gain });
+  oscillator.addEventListener("ended", () => {
+    state.musicNodes = state.musicNodes.filter((node) => node.oscillator !== oscillator);
+  });
 }
 
 function playBirthdaySong() {
@@ -531,6 +550,7 @@ function playBirthdaySong() {
 
   state.audioContext ||= new AudioContext();
   state.audioContext.resume();
+  stopBirthdaySong();
   state.musicPlaying = true;
   musicButton.classList.add("is-on");
   musicButton.setAttribute("aria-label", "暂停生日快乐歌");
