@@ -40,7 +40,7 @@ const selectedGlyph = document.querySelector("#selectedGlyph");
 const selectedMessage = document.querySelector("#selectedMessage");
 const statusText = document.querySelector("#statusText");
 const cameraButton = document.querySelector("#cameraButton");
-const shuffleButton = document.querySelector("#shuffleButton");
+const musicButton = document.querySelector("#musicButton");
 const cameraFeed = document.querySelector("#cameraFeed");
 const gestureCanvas = document.querySelector("#gestureCanvas");
 const gestureLayer = document.querySelector("#gestureLayer");
@@ -65,7 +65,10 @@ const state = {
   cameraOn: false,
   lastGesturePick: 0,
   lastFinger: null,
-  detectingHands: false
+  detectingHands: false,
+  audioContext: null,
+  musicTimers: [],
+  musicPlaying: false
 };
 
 function fibonacciSphere(count) {
@@ -489,10 +492,80 @@ canvas.addEventListener("pointercancel", () => {
   orbWrap.classList.remove("dragging");
 });
 
-shuffleButton.addEventListener("click", () => {
-  buildPieces([...blessings].sort(() => Math.random() - 0.5));
-  statusText.textContent = "祝福已经重新排布。";
-});
+function stopBirthdaySong() {
+  state.musicTimers.forEach((timer) => window.clearTimeout(timer));
+  state.musicTimers = [];
+  state.musicPlaying = false;
+  musicButton.classList.remove("is-on");
+  musicButton.setAttribute("aria-label", "播放生日快乐歌");
+  musicButton.setAttribute("title", "播放生日快乐歌");
+}
+
+function playTone(frequency, startTime, duration) {
+  const context = state.audioContext;
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = "triangle";
+  oscillator.frequency.value = frequency;
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(0.12, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + duration + 0.03);
+}
+
+function playBirthdaySong() {
+  if (state.musicPlaying) {
+    stopBirthdaySong();
+    statusText.textContent = "音乐已暂停。";
+    return;
+  }
+
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) {
+    statusText.textContent = "这个浏览器暂不支持播放音乐。";
+    return;
+  }
+
+  state.audioContext ||= new AudioContext();
+  state.audioContext.resume();
+  state.musicPlaying = true;
+  musicButton.classList.add("is-on");
+  musicButton.setAttribute("aria-label", "暂停生日快乐歌");
+  musicButton.setAttribute("title", "暂停生日快乐歌");
+  statusText.textContent = "生日快乐歌播放中。";
+
+  const notes = [
+    ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["C5", 0.64], ["B4", 1.2],
+    ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["D5", 0.64], ["C5", 1.2],
+    ["G4", 0.32], ["G4", 0.32], ["G5", 0.64], ["E5", 0.64], ["C5", 0.64], ["B4", 0.64], ["A4", 1.2],
+    ["F5", 0.32], ["F5", 0.32], ["E5", 0.64], ["C5", 0.64], ["D5", 0.64], ["C5", 1.4]
+  ];
+  const frequencies = {
+    G4: 392,
+    A4: 440,
+    B4: 493.88,
+    C5: 523.25,
+    D5: 587.33,
+    E5: 659.25,
+    F5: 698.46,
+    G5: 783.99
+  };
+
+  let cursor = state.audioContext.currentTime + 0.04;
+  notes.forEach(([note, duration]) => {
+    playTone(frequencies[note], cursor, duration * 0.86);
+    cursor += duration;
+  });
+
+  const totalMs = Math.max(0, (cursor - state.audioContext.currentTime) * 1000);
+  state.musicTimers.push(window.setTimeout(() => {
+    stopBirthdaySong();
+    playBirthdaySong();
+  }, totalMs + 260));
+}
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -598,8 +671,8 @@ async function detectHands() {
         const dx = normalizedX - state.lastFinger.x;
         const dy = normalizedY - state.lastFinger.y;
         if (Math.abs(dx) + Math.abs(dy) < 0.22) {
-          const xTurn = quatFromAxisAngle({ x: 0, y: 1, z: 0 }, -dx * 4.4);
-          const yTurn = quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -dy * 4.4);
+          const xTurn = quatFromAxisAngle({ x: 0, y: 1, z: 0 }, -dx * 2.7);
+          const yTurn = quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -dy * 2.7);
           state.targetOrientation = quatMultiply(yTurn, quatMultiply(xTurn, state.targetOrientation));
         }
       }
@@ -622,6 +695,7 @@ async function detectHands() {
 }
 
 cameraButton.addEventListener("click", startCameraGesture);
+musicButton.addEventListener("click", playBirthdaySong);
 window.addEventListener("resize", resize);
 
 resize();

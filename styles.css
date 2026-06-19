@@ -128,6 +128,12 @@ h1 {
   transform: translateY(-1px);
 }
 
+.icon-button.is-on {
+  background: rgba(244, 207, 140, 0.22);
+  border-color: rgba(255, 228, 188, 0.72);
+  box-shadow: 0 0 24px rgba(242, 167, 166, 0.22);
+}
+
 .camera-icon,
 .spark-icon {
   display: block;
