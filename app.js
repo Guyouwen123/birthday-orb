@@ -123,6 +123,24 @@ function rotate(point) {
   return { x: x1, y: y1, z: z2 };
 }
 
+function shortestAngle(current, target) {
+  const turn = Math.PI * 2;
+  return current + ((((target - current) % turn) + Math.PI * 3) % turn) - Math.PI;
+}
+
+function centerPiece(index) {
+  const piece = state.pieces[index];
+  if (!piece) return;
+
+  const { x, y, z } = piece.normal;
+  const targetY = Math.atan2(x, z);
+  const horizontal = Math.hypot(x, z);
+  const targetX = Math.atan2(-y, horizontal);
+
+  state.targetY = shortestAngle(state.targetY, targetY);
+  state.targetX = shortestAngle(state.targetX, targetX);
+}
+
 function project(point, lift = 0) {
   const camera = 3.25;
   const depth = camera - point.z;
@@ -308,10 +326,11 @@ function render(time = 0) {
   requestAnimationFrame(render);
 }
 
-function selectPiece(index, pop = true) {
+function selectPiece(index, pop = true, center = false) {
   const piece = state.pieces[index];
   if (!piece) return;
   state.activeIndex = index;
+  if (center) centerPiece(index);
   selectedGlyph.textContent = piece.glyph;
   selectedMessage.textContent = piece.message;
   selectionCard.classList.add("is-visible");
@@ -364,7 +383,7 @@ canvas.addEventListener("pointerdown", (event) => {
   canvas.setPointerCapture(event.pointerId);
   orbWrap.classList.add("dragging");
   const pick = nearestPiece(point.x, point.y, 70);
-  if (pick >= 0) selectPiece(pick);
+  if (pick >= 0) selectPiece(pick, true, true);
 });
 
 canvas.addEventListener("pointermove", (event) => {
@@ -504,8 +523,8 @@ async function detectHands() {
       context.fill();
 
       const pick = nearestPiece(localX, localY, 82);
-      if (pick >= 0 && performance.now() - state.lastGesturePick > 170) {
-        selectPiece(pick);
+      if (pick >= 0 && performance.now() - state.lastGesturePick > 420) {
+        selectPiece(pick, true, true);
         state.lastGesturePick = performance.now();
       }
     } else {
