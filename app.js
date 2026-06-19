@@ -92,6 +92,7 @@ const state = {
   nameSequenceActive: false,
   revealedNameChars: new Set(),
   finaleStarted: false,
+  finaleTimers: [],
   fireworks: []
 };
 
@@ -514,20 +515,23 @@ function updateNameSequence(glyph) {
 }
 
 function triggerFinale() {
+  if (state.finaleTimers.length) return;
   const colors = [
     "rgba(123,223,246,ALPHA)",
     "rgba(184,140,255,ALPHA)",
     "rgba(246,213,138,ALPHA)",
     "rgba(255,157,181,ALPHA)"
   ];
-  for (let index = 0; index < 7; index += 1) {
-    window.setTimeout(() => {
+  const burstCount = 18;
+  for (let index = 0; index < burstCount; index += 1) {
+    const timer = window.setTimeout(() => {
       const x = state.width * (0.18 + Math.random() * 0.64);
       const y = state.height * (0.18 + Math.random() * 0.34);
       launchFirework(x, y, colors[index % colors.length]);
-    }, index * 260);
+    }, index * 520);
+    state.finaleTimers.push(timer);
   }
-  if (!state.musicPlaying) playBirthdaySong();
+  playBirthdaySong({ loop: false, restart: true, status: "生日快乐歌播放中。" });
 }
 
 function nearestPiece(x, y, maxDistance = 58) {
@@ -647,11 +651,16 @@ function playTone(frequency, startTime, duration) {
   });
 }
 
-function playBirthdaySong() {
+function playBirthdaySong(options = {}) {
+  const { loop = true, restart = false, status = "生日快乐歌播放中。" } = options;
   if (state.musicPlaying) {
     stopBirthdaySong();
-    statusText.textContent = "音乐已暂停。";
-    return;
+    if (restart) {
+      state.musicPlaying = false;
+    } else {
+      statusText.textContent = "音乐已暂停。";
+      return;
+    }
   }
 
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -667,7 +676,7 @@ function playBirthdaySong() {
   musicButton.classList.add("is-on");
   musicButton.setAttribute("aria-label", "暂停生日快乐歌");
   musicButton.setAttribute("title", "暂停生日快乐歌");
-  statusText.textContent = "生日快乐歌播放中。";
+  statusText.textContent = status;
 
   const notes = [
     ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["C5", 0.64], ["B4", 1.2],
@@ -695,7 +704,14 @@ function playBirthdaySong() {
   const totalMs = Math.max(0, (cursor - state.audioContext.currentTime) * 1000);
   state.musicTimers.push(window.setTimeout(() => {
     stopBirthdaySong();
-    playBirthdaySong();
+    if (loop) {
+      playBirthdaySong({ loop: true, status });
+    } else {
+      state.finaleTimers.forEach((timer) => window.clearTimeout(timer));
+      state.finaleTimers = [];
+      state.fireworks = [];
+      statusText.textContent = "拖拽星体，或点击任意祝福片。";
+    }
   }, totalMs + 260));
 }
 
