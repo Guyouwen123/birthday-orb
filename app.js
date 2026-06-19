@@ -102,6 +102,10 @@ const state = {
   girlAwake: false
 };
 
+const finaleSceneImage = new Image();
+finaleSceneImage.decoding = "async";
+finaleSceneImage.src = "assets/cartoon-girl-finale.jpg?v=20260619-cartoon-girl";
+
 const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
 const birthdaySongNotes = [
   ["G4", 0.32], ["G4", 0.32], ["A4", 0.64], ["G4", 0.64], ["C5", 0.64], ["B4", 1.2],
@@ -426,8 +430,87 @@ function drawCakeScene(time) {
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, state.width, state.height);
 
-  drawCartoonGirl(cx, cy + state.radius * 0.04, time);
-  drawBirthdayCake(cx, cy + state.radius * 0.36, time);
+  if (finaleSceneImage.complete && finaleSceneImage.naturalWidth) {
+    drawFinaleSceneImage(time);
+  } else {
+    drawCartoonGirl(cx, cy + state.radius * 0.04, time);
+    drawBirthdayCake(cx, cy + state.radius * 0.36, time);
+  }
+}
+
+function drawFinaleSceneImage(time) {
+  const imageRatio = finaleSceneImage.naturalWidth / finaleSceneImage.naturalHeight;
+  const maxWidth = state.width * 0.9;
+  const maxHeight = state.height * 0.88;
+  let drawWidth = Math.min(maxWidth, maxHeight * imageRatio);
+  let drawHeight = drawWidth / imageRatio;
+  if (drawHeight > maxHeight) {
+    drawHeight = maxHeight;
+    drawWidth = drawHeight * imageRatio;
+  }
+
+  const breathe = 1 + Math.sin(time * 0.0017) * 0.012;
+  drawWidth *= breathe;
+  drawHeight *= breathe;
+
+  const x = (state.width - drawWidth) / 2;
+  const y = state.height * 0.52 - drawHeight / 2;
+  const radius = Math.min(28, drawWidth * 0.045);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(255, 216, 154, 0.42)";
+  ctx.shadowBlur = 42;
+  roundedRect(x, y, drawWidth, drawHeight, radius);
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  ctx.fill();
+  ctx.clip();
+  ctx.drawImage(finaleSceneImage, x, y, drawWidth, drawHeight);
+
+  const warmth = ctx.createRadialGradient(state.width * 0.52, y + drawHeight * 0.7, 10, state.width * 0.5, y + drawHeight * 0.55, drawHeight * 0.65);
+  warmth.addColorStop(0, "rgba(255,236,168,0.22)");
+  warmth.addColorStop(0.48, "rgba(255,157,181,0.08)");
+  warmth.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = warmth;
+  ctx.fillRect(x, y, drawWidth, drawHeight);
+
+  if (state.girlAwake) {
+    ctx.fillStyle = "rgba(255,255,255,0.1)";
+    ctx.fillRect(x, y, drawWidth, drawHeight);
+    ctx.strokeStyle = "rgba(255, 241, 168, 0.78)";
+    ctx.lineWidth = Math.max(1.2, drawWidth * 0.006);
+    ctx.lineCap = "round";
+    const eyeY = y + drawHeight * 0.39;
+    const leftEyeX = x + drawWidth * 0.43;
+    const rightEyeX = x + drawWidth * 0.58;
+    const eyeW = drawWidth * 0.032;
+    ctx.beginPath();
+    ctx.arc(leftEyeX, eyeY, eyeW, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.arc(rightEyeX, eyeY, eyeW, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(223,248,255,0.32)";
+  ctx.lineWidth = 1.4;
+  roundedRect(x, y, drawWidth, drawHeight, radius);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  for (let i = 0; i < 18; i += 1) {
+    const seed = Math.sin(i * 91.7) * 10000;
+    const seed2 = Math.sin(i * 41.3) * 10000;
+    const px = x + (seed - Math.floor(seed)) * drawWidth;
+    const py = y + (seed2 - Math.floor(seed2)) * drawHeight * 0.8;
+    const pulse = 1 + Math.sin(time * 0.004 + i) * 0.4;
+    ctx.beginPath();
+    ctx.arc(px, py, 1.2 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawCartoonGirl(cx, cy, time) {
