@@ -90,10 +90,16 @@ const state = {
   musicNodes: [],
   musicPlaying: false,
   nameSequenceActive: false,
-  revealedNameChars: new Set()
+  revealedNameChars: new Set(),
+  finaleStarted: false,
+  fireworks: []
 };
 
 const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
+
+function pieceIndexByGlyph(glyph) {
+  return state.pieces.findIndex((piece) => piece.glyph === glyph);
+}
 
 function fibonacciSphere(count) {
   const points = [];
@@ -320,6 +326,42 @@ function drawBackground(time) {
   ctx.restore();
 }
 
+function launchFirework(x, y, color) {
+  const count = 42;
+  for (let index = 0; index < count; index += 1) {
+    const angle = (Math.PI * 2 * index) / count;
+    const speed = 1.5 + Math.sin(index * 12.989) * 0.45 + Math.random() * 1.2;
+    state.fireworks.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: 0.012 + Math.random() * 0.01,
+      color
+    });
+  }
+}
+
+function drawFireworks() {
+  if (!state.fireworks.length) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  state.fireworks = state.fireworks.filter((particle) => {
+    particle.x += particle.vx;
+    particle.y += particle.vy;
+    particle.vy += 0.018;
+    particle.life -= particle.decay;
+    if (particle.life <= 0) return false;
+    ctx.fillStyle = particle.color.replace("ALPHA", Math.max(0, particle.life).toFixed(3));
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, 2.2 + particle.life * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    return true;
+  });
+  ctx.restore();
+}
+
 function drawCore(time) {
   const cx = state.width / 2 + state.pointer.x * 0.12;
   const cy = state.height / 2 + state.pointer.y * 0.08;
@@ -430,6 +472,7 @@ function render(time = 0) {
       drawPiece(piece, view, index, time);
     }
   });
+  drawFireworks();
 
   requestAnimationFrame(render);
 }
@@ -464,6 +507,27 @@ function updateNameSequence(glyph) {
   nameSequence.querySelectorAll("span").forEach((slot) => {
     slot.classList.toggle("is-revealed", state.revealedNameChars.has(slot.dataset.char));
   });
+  if (!state.finaleStarted && nameChars.every((char) => state.revealedNameChars.has(char))) {
+    state.finaleStarted = true;
+    triggerFinale();
+  }
+}
+
+function triggerFinale() {
+  const colors = [
+    "rgba(123,223,246,ALPHA)",
+    "rgba(184,140,255,ALPHA)",
+    "rgba(246,213,138,ALPHA)",
+    "rgba(255,157,181,ALPHA)"
+  ];
+  for (let index = 0; index < 7; index += 1) {
+    window.setTimeout(() => {
+      const x = state.width * (0.18 + Math.random() * 0.64);
+      const y = state.height * (0.18 + Math.random() * 0.34);
+      launchFirework(x, y, colors[index % colors.length]);
+    }, index * 260);
+  }
+  if (!state.musicPlaying) playBirthdaySong();
 }
 
 function nearestPiece(x, y, maxDistance = 58) {
@@ -764,6 +828,12 @@ async function detectHands() {
 
 cameraButton.addEventListener("click", startCameraGesture);
 musicButton.addEventListener("click", playBirthdaySong);
+nameSequence.addEventListener("click", (event) => {
+  const slot = event.target.closest("span[data-char]");
+  if (!slot || !slot.classList.contains("is-revealed")) return;
+  const index = pieceIndexByGlyph(slot.dataset.char);
+  if (index >= 0) selectPiece(index, true, true);
+});
 window.addEventListener("resize", resize);
 
 resize();
