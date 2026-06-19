@@ -64,7 +64,8 @@ const state = {
   cameraStream: null,
   cameraOn: false,
   lastGesturePick: 0,
-  lastFinger: null
+  lastFinger: null,
+  detectingHands: false
 };
 
 function fibonacciSphere(count) {
@@ -373,9 +374,11 @@ function drawPiece(piece, view, index, time) {
 }
 
 function render(time = 0) {
-  state.orientation = quatSlerp(state.orientation, state.targetOrientation, 0.13);
-  state.pointer.x += (state.targetPointer.x - state.pointer.x) * 0.08;
-  state.pointer.y += (state.targetPointer.y - state.pointer.y) * 0.08;
+  const orientationEase = state.cameraOn ? 0.34 : 0.13;
+  const pointerEase = state.cameraOn ? 0.28 : 0.08;
+  state.orientation = quatSlerp(state.orientation, state.targetOrientation, orientationEase);
+  state.pointer.x += (state.targetPointer.x - state.pointer.x) * pointerEase;
+  state.pointer.y += (state.targetPointer.y - state.pointer.y) * pointerEase;
 
   drawBackground(time);
   drawCore(time);
@@ -526,7 +529,12 @@ async function startCameraGesture() {
     await ensureHandpose();
     state.handDetector = await window.handpose.load();
     state.cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: 640, height: 480 },
+      video: {
+        facingMode: "user",
+        width: { ideal: 320, max: 480 },
+        height: { ideal: 240, max: 360 },
+        frameRate: { ideal: 30, max: 30 }
+      },
       audio: false
     });
     cameraFeed.srcObject = state.cameraStream;
@@ -547,6 +555,7 @@ async function startCameraGesture() {
 function stopCameraGesture() {
   state.cameraOn = false;
   state.lastFinger = null;
+  state.detectingHands = false;
   cameraButton.classList.remove("is-on");
   gestureLayer.classList.remove("is-on");
   fingerDot.classList.remove("is-on");
@@ -560,19 +569,22 @@ function stopCameraGesture() {
 
 async function detectHands() {
   if (!state.cameraOn || !state.handDetector) return;
-  const context = gestureCanvas.getContext("2d");
-  gestureCanvas.width = cameraFeed.videoWidth || 640;
-  gestureCanvas.height = cameraFeed.videoHeight || 480;
+  if (state.detectingHands) {
+    state.handLoop = requestAnimationFrame(detectHands);
+    return;
+  }
+  state.detectingHands = true;
+  const videoWidth = cameraFeed.videoWidth || 320;
+  const videoHeight = cameraFeed.videoHeight || 240;
 
   try {
     const predictions = await state.handDetector.estimateHands(cameraFeed);
-    context.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
     if (predictions[0]?.landmarks?.[8]) {
       const [rawX, rawY] = predictions[0].landmarks[8];
-      const mirroredX = gestureCanvas.width - rawX;
+      const mirroredX = videoWidth - rawX;
       const stageRect = canvas.getBoundingClientRect();
-      const normalizedX = mirroredX / gestureCanvas.width;
-      const normalizedY = rawY / gestureCanvas.height;
+      const normalizedX = mirroredX / videoWidth;
+      const normalizedY = rawY / videoHeight;
       const screenX = stageRect.left + normalizedX * stageRect.width;
       const screenY = stageRect.top + normalizedY * stageRect.height;
       const localX = normalizedX * state.width;
@@ -586,20 +598,15 @@ async function detectHands() {
         const dx = normalizedX - state.lastFinger.x;
         const dy = normalizedY - state.lastFinger.y;
         if (Math.abs(dx) + Math.abs(dy) < 0.22) {
-          const xTurn = quatFromAxisAngle({ x: 0, y: 1, z: 0 }, -dx * 3.4);
-          const yTurn = quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -dy * 3.4);
+          const xTurn = quatFromAxisAngle({ x: 0, y: 1, z: 0 }, -dx * 4.4);
+          const yTurn = quatFromAxisAngle({ x: 1, y: 0, z: 0 }, -dy * 4.4);
           state.targetOrientation = quatMultiply(yTurn, quatMultiply(xTurn, state.targetOrientation));
         }
       }
       state.lastFinger = { x: normalizedX, y: normalizedY };
 
-      context.fillStyle = "#d9b56f";
-      context.beginPath();
-      context.arc(mirroredX, rawY, 10, 0, Math.PI * 2);
-      context.fill();
-
       const pick = nearestPiece(localX, localY, 82);
-      if (pick >= 0 && performance.now() - state.lastGesturePick > 420) {
+      if (pick >= 0 && performance.now() - state.lastGesturePick > 260) {
         selectPiece(pick, true, true);
         state.lastGesturePick = performance.now();
       }
@@ -608,6 +615,8 @@ async function detectHands() {
     }
   } catch (error) {
     statusText.textContent = "手势识别中断了，鼠标/触控仍然可用。";
+  } finally {
+    state.detectingHands = false;
   }
   state.handLoop = requestAnimationFrame(detectHands);
 }
