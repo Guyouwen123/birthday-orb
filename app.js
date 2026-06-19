@@ -31,9 +31,9 @@ const blessings = [
   ["燃", "愿你继续热烈，继续发光，继续被爱。"]
 ];
 
-const colors = ["#d9b56f", "#9fb2c7", "#c98c4a", "#6f879d", "#d0c0a0", "#8ea681", "#b97963", "#8390aa"];
-
-const orb = document.querySelector("#orb");
+const palette = ["#d9b56f", "#aeb9c7", "#c98c4a", "#758da4", "#d5c4a4", "#93a783", "#b97861", "#8693ad"];
+const canvas = document.querySelector("#orbCanvas");
+const ctx = canvas.getContext("2d");
 const orbWrap = document.querySelector("#orbWrap");
 const selectionCard = document.querySelector("#selectionCard");
 const selectedGlyph = document.querySelector("#selectedGlyph");
@@ -47,25 +47,25 @@ const gestureLayer = document.querySelector("#gestureLayer");
 const fingerDot = document.querySelector("#fingerDot");
 
 const state = {
-  rotationX: -0.28,
-  rotationY: 0.35,
-  velocityX: 0,
-  velocityY: 0,
-  pointerX: 0,
-  pointerY: 0,
-  targetPointerX: 0,
-  targetPointerY: 0,
+  dpr: Math.min(window.devicePixelRatio || 1, 2),
+  width: 0,
+  height: 0,
   radius: 230,
+  rotationX: -0.24,
+  rotationY: 0.4,
+  targetX: -0.24,
+  targetY: 0.4,
+  dragStart: null,
   activeIndex: 0,
-  dragging: false,
-  lastPointer: { x: 0, y: 0 },
-  tiles: [],
+  pieces: [],
+  projected: [],
+  pointer: { x: 0, y: 0 },
+  targetPointer: { x: 0, y: 0 },
   handLoop: null,
   handDetector: null,
   cameraStream: null,
   cameraOn: false,
-  lastGesturePick: 0,
-  lastSelectedAt: 0
+  lastGesturePick: 0
 };
 
 function fibonacciSphere(count) {
@@ -74,202 +74,306 @@ function fibonacciSphere(count) {
 
   for (let index = 0; index < count; index += 1) {
     const y = 1 - (index / (count - 1)) * 2;
-    const radius = Math.sqrt(1 - y * y);
+    const ring = Math.sqrt(1 - y * y);
     const theta = goldenAngle * index;
     points.push({
-      x: Math.cos(theta) * radius,
+      x: Math.cos(theta) * ring,
       y,
-      z: Math.sin(theta) * radius
+      z: Math.sin(theta) * ring
     });
   }
 
   return points;
 }
 
-function buildOrb(items = blessings) {
-  orb.innerHTML = "";
-  const points = fibonacciSphere(items.length);
-  state.tiles = points.map((point, index) => {
-    const tile = document.createElement("button");
-    tile.type = "button";
-    tile.className = `tile ${index % 5 === 0 ? "pent" : "hex"}`;
-    tile.textContent = items[index][0];
-    tile.dataset.message = items[index][1];
-    tile.dataset.glyph = items[index][0];
-    tile.style.setProperty("--tile-color", colors[index % colors.length]);
-    tile.addEventListener("click", () => selectTile(index, true));
-    tile.addEventListener("pointerenter", () => selectTile(index, false));
-    orb.append(tile);
-    return { element: tile, point, screenX: 0, screenY: 0, visible: true };
-  });
-  selectTile(0, false);
+function buildPieces(items = blessings) {
+  state.pieces = fibonacciSphere(items.length).map((normal, index) => ({
+    normal,
+    glyph: items[index][0],
+    message: items[index][1],
+    sides: index % 5 === 0 ? 5 : 6,
+    color: palette[index % palette.length],
+    phase: index * 0.71
+  }));
+  selectPiece(0, false);
 }
 
-function rotatePoint(point) {
+function resize() {
+  const rect = orbWrap.getBoundingClientRect();
+  state.width = Math.max(320, rect.width);
+  state.height = Math.max(360, rect.height);
+  canvas.width = Math.round(state.width * state.dpr);
+  canvas.height = Math.round(state.height * state.dpr);
+  canvas.style.width = `${state.width}px`;
+  canvas.style.height = `${state.height}px`;
+  ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+  state.radius = Math.min(state.width, state.height) * 0.34;
+}
+
+function rotate(point) {
   const cosY = Math.cos(state.rotationY);
   const sinY = Math.sin(state.rotationY);
   const cosX = Math.cos(state.rotationX);
   const sinX = Math.sin(state.rotationX);
-
   const x1 = point.x * cosY - point.z * sinY;
   const z1 = point.x * sinY + point.z * cosY;
   const y1 = point.y * cosX - z1 * sinX;
   const z2 = point.y * sinX + z1 * cosX;
-
   return { x: x1, y: y1, z: z2 };
 }
 
-function renderOrb() {
-  const rect = orb.getBoundingClientRect();
-  state.radius = Math.min(rect.width, rect.height) * 0.42;
-  const now = performance.now();
-  const pulse = 1 + Math.sin(now * 0.0018) * 0.018;
-  const scanAngle = (now * 0.018) % 360;
+function project(point, lift = 0) {
+  const camera = 3.25;
+  const depth = camera - point.z;
+  const scale = camera / depth;
+  const centerX = state.width / 2 + state.pointer.x * 0.12;
+  const centerY = state.height / 2 + state.pointer.y * 0.08;
+  return {
+    x: centerX + point.x * (state.radius + lift) * scale,
+    y: centerY + point.y * (state.radius + lift) * scale,
+    scale,
+    depth: point.z
+  };
+}
 
-  state.pointerX += (state.targetPointerX - state.pointerX) * 0.08;
-  state.pointerY += (state.targetPointerY - state.pointerY) * 0.08;
-  document.documentElement.style.setProperty("--parallax-x", `${state.pointerX}px`);
-  document.documentElement.style.setProperty("--parallax-y", `${state.pointerY}px`);
-  orb.style.setProperty("--pulse-scale", pulse.toFixed(3));
-  orb.style.setProperty("--scan-angle", `${scanAngle.toFixed(1)}deg`);
+function lighten(hex, amount) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  const r = Math.min(255, Math.max(0, (n >> 16) + amount));
+  const g = Math.min(255, Math.max(0, ((n >> 8) & 255) + amount));
+  const b = Math.min(255, Math.max(0, (n & 255) + amount));
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
-  state.tiles.forEach((tile, index) => {
-    const rotated = rotatePoint(tile.point);
-    const perspective = 1 / (1.72 - rotated.z * 0.58);
-    const size = Math.max(42, Math.min(74, rect.width * 0.118));
-    const x = rotated.x * state.radius * perspective;
-    const y = rotated.y * state.radius * perspective;
-    const depthScale = 0.62 + perspective * 0.58;
-    const visible = rotated.z > -0.78;
-    const sideOpacity = Math.max(0.2, Math.min(0.72, 0.72 - rotated.z * 0.26));
-    const tilt = rotated.x * 8 + rotated.y * 4;
-    const glintPhase = Math.sin(now * 0.0024 + index * 0.7);
-    const glintOpacity = Math.max(0, glintPhase - 0.72) * (rotated.z + 1) * 0.38;
-    const glintX = -70 + ((now * 0.018 + index * 17) % 140);
-
-    tile.screenX = rect.left + rect.width / 2 + x;
-    tile.screenY = rect.top + rect.height / 2 + y;
-    tile.visible = visible;
-    tile.element.style.setProperty("--x", x - size / 2);
-    tile.element.style.setProperty("--y", y - size / 2);
-    tile.element.style.setProperty("--scale", depthScale);
-    tile.element.style.setProperty("--tile-size", `${size}px`);
-    tile.element.style.setProperty("--z", Math.round((rotated.z + 1) * 200));
-    tile.element.style.setProperty("--side-opacity", sideOpacity);
-    tile.element.style.setProperty("--tilt", tilt.toFixed(2));
-    tile.element.style.setProperty("--glint-opacity", glintOpacity.toFixed(3));
-    tile.element.style.setProperty("--glint-x", `${glintX.toFixed(1)}%`);
-    tile.element.classList.toggle("is-hidden", !visible);
-    tile.element.classList.toggle("is-active", index === state.activeIndex);
-    tile.element.classList.toggle("is-dim", index !== state.activeIndex && rotated.z < -0.12);
-    tile.element.style.opacity = visible ? String(0.42 + perspective * 0.42) : "0";
+function polygonPoints(cx, cy, radius, sides, angle) {
+  return Array.from({ length: sides }, (_, index) => {
+    const theta = angle + (Math.PI * 2 * index) / sides;
+    return [cx + Math.cos(theta) * radius, cy + Math.sin(theta) * radius];
   });
 }
 
-function animate() {
-  if (!state.dragging) {
-    state.rotationX += state.velocityX;
-    state.rotationY += state.velocityY;
-    state.velocityX *= 0.82;
-    state.velocityY *= 0.82;
-    if (Math.abs(state.velocityX) < 0.0003) state.velocityX = 0;
-    if (Math.abs(state.velocityY) < 0.0003) state.velocityY = 0;
-  }
-  renderOrb();
-  requestAnimationFrame(animate);
+function drawPolygon(points) {
+  ctx.beginPath();
+  points.forEach(([x, y], index) => {
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.closePath();
 }
 
-function selectTile(index, settleVelocity) {
-  const tile = state.tiles[index];
-  if (!tile || !tile.visible) return;
+function drawBackground(time) {
+  ctx.clearRect(0, 0, state.width, state.height);
 
-  const changed = state.activeIndex !== index;
+  const cx = state.width / 2 + state.pointer.x * 0.15;
+  const cy = state.height / 2 + state.pointer.y * 0.12;
+  const glow = ctx.createRadialGradient(cx, cy, state.radius * 0.18, cx, cy, state.radius * 1.22);
+  glow.addColorStop(0, "rgba(217,181,111,0.16)");
+  glow.addColorStop(0.48, "rgba(95,116,142,0.08)");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, state.width, state.height);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(time * 0.00008);
+  ctx.strokeStyle = "rgba(217,181,111,0.13)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, state.radius * (1.02 + i * 0.09), state.radius * (0.26 + i * 0.04), i * 0.44, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawCore(time) {
+  const cx = state.width / 2 + state.pointer.x * 0.12;
+  const cy = state.height / 2 + state.pointer.y * 0.08;
+  const pulse = 1 + Math.sin(time * 0.0017) * 0.02;
+  const gradient = ctx.createRadialGradient(cx - state.radius * 0.25, cy - state.radius * 0.3, state.radius * 0.1, cx, cy, state.radius * 1.02);
+  gradient.addColorStop(0, "rgba(255,255,255,0.18)");
+  gradient.addColorStop(0.38, "rgba(217,181,111,0.08)");
+  gradient.addColorStop(0.7, "rgba(83,98,117,0.06)");
+  gradient.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(cx, cy, state.radius * pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(246,225,181,0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, state.radius * 0.98, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawPiece(piece, view, index, time) {
+  const active = index === state.activeIndex;
+  const lift = active ? 42 : 8;
+  const projected = project(view, lift);
+  const light = Math.max(0, view.x * -0.25 + view.y * -0.34 + view.z * 0.92);
+  const shade = -42 + light * 88;
+  const alpha = Math.max(0, Math.min(1, (view.z + 0.86) / 1.86));
+  const size = state.radius * (active ? 0.18 : 0.128) * projected.scale;
+  const angle = piece.phase + state.rotationY * 0.5 + time * 0.00018;
+  const points = polygonPoints(projected.x, projected.y, size, piece.sides, angle);
+  const thickness = Math.max(5, size * 0.18) * projected.scale;
+  const sidePoints = polygonPoints(projected.x + thickness, projected.y + thickness, size, piece.sides, angle);
+
+  ctx.globalAlpha = alpha;
+
+  drawPolygon(sidePoints);
+  ctx.fillStyle = "rgba(10,12,16,0.56)";
+  ctx.fill();
+
+  drawPolygon(points);
+  const face = ctx.createLinearGradient(projected.x - size, projected.y - size, projected.x + size, projected.y + size);
+  face.addColorStop(0, lighten(piece.color, Math.round(shade + 50)));
+  face.addColorStop(0.48, lighten(piece.color, Math.round(shade)));
+  face.addColorStop(1, lighten(piece.color, Math.round(shade - 34)));
+  ctx.fillStyle = face;
+  ctx.fill();
+
+  ctx.strokeStyle = active ? "rgba(255,232,181,0.92)" : "rgba(255,244,218,0.32)";
+  ctx.lineWidth = active ? 2.2 : 1;
+  ctx.stroke();
+
+  if (active) {
+    ctx.save();
+    drawPolygon(points);
+    ctx.shadowColor = "rgba(217,181,111,0.72)";
+    ctx.shadowBlur = 26;
+    ctx.strokeStyle = "rgba(255,232,181,0.84)";
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.fillStyle = "rgba(24,17,11,0.92)";
+  ctx.font = `${Math.max(18, size * 0.66)}px Microsoft YaHei, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(piece.glyph, projected.x, projected.y + 1);
+  ctx.globalAlpha = 1;
+
+  state.projected[index] = {
+    x: projected.x,
+    y: projected.y,
+    z: view.z,
+    radius: size * 1.05,
+    visible: view.z > -0.72
+  };
+}
+
+function render(time = 0) {
+  state.rotationX += (state.targetX - state.rotationX) * 0.12;
+  state.rotationY += (state.targetY - state.rotationY) * 0.12;
+  state.pointer.x += (state.targetPointer.x - state.pointer.x) * 0.08;
+  state.pointer.y += (state.targetPointer.y - state.pointer.y) * 0.08;
+
+  drawBackground(time);
+  drawCore(time);
+
+  const views = state.pieces
+    .map((piece, index) => ({ piece, index, view: rotate(piece.normal) }))
+    .sort((a, b) => a.view.z - b.view.z);
+
+  state.projected = [];
+  views.forEach(({ piece, index, view }) => {
+    if (view.z > -0.84 || index === state.activeIndex) {
+      drawPiece(piece, view, index, time);
+    }
+  });
+
+  requestAnimationFrame(render);
+}
+
+function selectPiece(index, pop = true) {
+  const piece = state.pieces[index];
+  if (!piece) return;
   state.activeIndex = index;
-  selectedGlyph.textContent = tile.element.dataset.glyph;
-  selectedMessage.textContent = tile.element.dataset.message;
+  selectedGlyph.textContent = piece.glyph;
+  selectedMessage.textContent = piece.message;
   selectionCard.classList.add("is-visible");
-
-  if (changed || performance.now() - state.lastSelectedAt > 650) {
+  if (pop) {
     selectionCard.classList.remove("is-popping");
     requestAnimationFrame(() => {
       selectionCard.classList.add("is-popping");
       window.setTimeout(() => selectionCard.classList.remove("is-popping"), 180);
     });
-    state.lastSelectedAt = performance.now();
-  }
-
-  if (settleVelocity) {
-    state.velocityX *= 0.4;
-    state.velocityY *= 0.4;
   }
 }
 
-function findNearestTile(x, y, maxDistance = 72) {
-  let nearestIndex = -1;
+function nearestPiece(x, y, maxDistance = 58) {
+  let nearest = -1;
   let nearestDistance = Infinity;
-
-  state.tiles.forEach((tile, index) => {
-    if (!tile.visible) return;
-    const distance = Math.hypot(tile.screenX - x, tile.screenY - y);
-    if (distance < nearestDistance) {
+  state.projected.forEach((point, index) => {
+    if (!point?.visible) return;
+    const distance = Math.hypot(point.x - x, point.y - y);
+    if (distance < nearestDistance && distance < Math.max(maxDistance, point.radius)) {
+      nearest = index;
       nearestDistance = distance;
-      nearestIndex = index;
     }
   });
-
-  return nearestDistance <= maxDistance ? nearestIndex : -1;
+  return nearest;
 }
 
-function onPointerDown(event) {
-  state.dragging = true;
-  state.lastPointer.x = event.clientX;
-  state.lastPointer.y = event.clientY;
-  state.velocityX = 0;
-  state.velocityY = 0;
-  updateParallax(event.clientX, event.clientY);
+function localPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  };
+}
+
+function updatePointer(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  state.targetPointer.x = ((clientX - rect.left) / rect.width - 0.5) * 56;
+  state.targetPointer.y = ((clientY - rect.top) / rect.height - 0.5) * 56;
+}
+
+canvas.addEventListener("pointerdown", (event) => {
+  const point = localPoint(event);
+  state.dragStart = {
+    clientX: event.clientX,
+    clientY: event.clientY,
+    rotationX: state.targetX,
+    rotationY: state.targetY
+  };
+  updatePointer(event.clientX, event.clientY);
+  canvas.setPointerCapture(event.pointerId);
   orbWrap.classList.add("dragging");
-  orbWrap.setPointerCapture(event.pointerId);
-}
+  const pick = nearestPiece(point.x, point.y, 70);
+  if (pick >= 0) selectPiece(pick);
+});
 
-function onPointerMove(event) {
-  updateParallax(event.clientX, event.clientY);
-  if (!state.dragging) {
-    const nearest = findNearestTile(event.clientX, event.clientY, 54);
-    if (nearest >= 0) selectTile(nearest, false);
+canvas.addEventListener("pointermove", (event) => {
+  updatePointer(event.clientX, event.clientY);
+  const point = localPoint(event);
+  if (state.dragStart) {
+    const dx = event.clientX - state.dragStart.clientX;
+    const dy = event.clientY - state.dragStart.clientY;
+    state.targetY = state.dragStart.rotationY + dx * 0.009;
+    state.targetX = Math.max(-1.22, Math.min(1.22, state.dragStart.rotationX - dy * 0.009));
     return;
   }
+  const pick = nearestPiece(point.x, point.y, 54);
+  if (pick >= 0) selectPiece(pick, false);
+});
 
-  const dx = event.clientX - state.lastPointer.x;
-  const dy = event.clientY - state.lastPointer.y;
-  state.rotationY += dx * 0.008;
-  state.rotationX -= dy * 0.008;
-  state.rotationX = Math.max(-1.35, Math.min(1.35, state.rotationX));
-  state.velocityY = dx * 0.00025;
-  state.velocityX = -dy * 0.00025;
-  state.lastPointer.x = event.clientX;
-  state.lastPointer.y = event.clientY;
-}
-
-function onPointerUp(event) {
-  state.dragging = false;
+canvas.addEventListener("pointerup", (event) => {
+  state.dragStart = null;
   orbWrap.classList.remove("dragging");
-  if (orbWrap.hasPointerCapture(event.pointerId)) {
-    orbWrap.releasePointerCapture(event.pointerId);
-  }
-}
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+});
 
-function shuffleBlessings() {
-  const mixed = [...blessings].sort(() => Math.random() - 0.5);
-  buildOrb(mixed);
+canvas.addEventListener("pointercancel", () => {
+  state.dragStart = null;
+  orbWrap.classList.remove("dragging");
+});
+
+shuffleButton.addEventListener("click", () => {
+  buildPieces([...blessings].sort(() => Math.random() - 0.5));
   statusText.textContent = "祝福已经重新排布。";
-  state.velocityY = 0;
-}
-
-function updateParallax(clientX, clientY) {
-  const rect = orbWrap.getBoundingClientRect();
-  state.targetPointerX = ((clientX - rect.left) / rect.width - 0.5) * 42;
-  state.targetPointerY = ((clientY - rect.top) / rect.height - 0.5) * 42;
-}
+});
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -284,7 +388,6 @@ function loadScript(src) {
 
 async function ensureHandpose() {
   if (window.handpose) return;
-
   await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.22.0/dist/tf-core.min.js");
   await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.22.0/dist/tf-converter.min.js");
   await loadScript("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.22.0/dist/tf-backend-webgl.min.js");
@@ -331,9 +434,7 @@ function stopCameraGesture() {
   fingerDot.classList.remove("is-on");
   if (state.handLoop) cancelAnimationFrame(state.handLoop);
   state.handLoop = null;
-  if (state.cameraStream) {
-    state.cameraStream.getTracks().forEach((track) => track.stop());
-  }
+  if (state.cameraStream) state.cameraStream.getTracks().forEach((track) => track.stop());
   state.cameraStream = null;
   cameraFeed.srcObject = null;
   statusText.textContent = "手势已关闭，拖拽或点击继续互动。";
@@ -341,7 +442,6 @@ function stopCameraGesture() {
 
 async function detectHands() {
   if (!state.cameraOn || !state.handDetector) return;
-
   const context = gestureCanvas.getContext("2d");
   gestureCanvas.width = cameraFeed.videoWidth || 640;
   gestureCanvas.height = cameraFeed.videoHeight || 480;
@@ -349,48 +449,41 @@ async function detectHands() {
   try {
     const predictions = await state.handDetector.estimateHands(cameraFeed);
     context.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
-
     if (predictions[0]?.landmarks?.[8]) {
       const [rawX, rawY] = predictions[0].landmarks[8];
       const mirroredX = gestureCanvas.width - rawX;
-      const cameraRect = gestureLayer.getBoundingClientRect();
-      const stageRect = orbWrap.getBoundingClientRect();
+      const stageRect = canvas.getBoundingClientRect();
       const normalizedX = mirroredX / gestureCanvas.width;
       const normalizedY = rawY / gestureCanvas.height;
       const screenX = stageRect.left + normalizedX * stageRect.width;
       const screenY = stageRect.top + normalizedY * stageRect.height;
+      const localX = normalizedX * state.width;
+      const localY = normalizedY * state.height;
 
       fingerDot.style.left = `${screenX}px`;
       fingerDot.style.top = `${screenY}px`;
-      context.fillStyle = "#ffd166";
+      updatePointer(screenX, screenY);
+
+      context.fillStyle = "#d9b56f";
       context.beginPath();
       context.arc(mirroredX, rawY, 10, 0, Math.PI * 2);
       context.fill();
 
-      const nearest = findNearestTile(screenX, screenY, 86);
-      if (nearest >= 0 && performance.now() - state.lastGesturePick > 180) {
-        selectTile(nearest, true);
+      const pick = nearestPiece(localX, localY, 82);
+      if (pick >= 0 && performance.now() - state.lastGesturePick > 170) {
+        selectPiece(pick);
         state.lastGesturePick = performance.now();
       }
-
-      const centerOffset = (normalizedX - 0.5) * 0.004;
-      state.velocityY = state.velocityY * 0.82 + centerOffset;
-      void cameraRect;
     }
   } catch (error) {
     statusText.textContent = "手势识别中断了，鼠标/触控仍然可用。";
   }
-
   state.handLoop = requestAnimationFrame(detectHands);
 }
 
-orbWrap.addEventListener("pointerdown", onPointerDown);
-orbWrap.addEventListener("pointermove", onPointerMove);
-orbWrap.addEventListener("pointerup", onPointerUp);
-orbWrap.addEventListener("pointercancel", onPointerUp);
-shuffleButton.addEventListener("click", shuffleBlessings);
 cameraButton.addEventListener("click", startCameraGesture);
-window.addEventListener("resize", renderOrb);
+window.addEventListener("resize", resize);
 
-buildOrb();
-animate();
+resize();
+buildPieces();
+requestAnimationFrame(render);
