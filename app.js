@@ -57,6 +57,7 @@ const selectionCard = document.querySelector("#selectionCard");
 const selectedGlyph = document.querySelector("#selectedGlyph");
 const selectedMessage = document.querySelector("#selectedMessage");
 const statusText = document.querySelector("#statusText");
+const nameSequence = document.querySelector("#nameSequence");
 const cameraButton = document.querySelector("#cameraButton");
 const musicButton = document.querySelector("#musicButton");
 const cameraFeed = document.querySelector("#cameraFeed");
@@ -87,8 +88,12 @@ const state = {
   audioContext: null,
   musicTimers: [],
   musicNodes: [],
-  musicPlaying: false
+  musicPlaying: false,
+  nameSequenceActive: false,
+  revealedNameChars: new Set()
 };
+
+const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
 
 function fibonacciSphere(count) {
   const points = [];
@@ -434,6 +439,7 @@ function selectPiece(index, pop = true, center = false) {
   if (!piece) return;
   state.activeIndex = index;
   if (center) centerPiece(index);
+  updateNameSequence(piece.glyph);
   selectedGlyph.textContent = piece.glyph;
   selectedMessage.textContent = piece.message;
   selectionCard.classList.add("is-visible");
@@ -444,6 +450,20 @@ function selectPiece(index, pop = true, center = false) {
       window.setTimeout(() => selectionCard.classList.remove("is-popping"), 180);
     });
   }
+}
+
+function updateNameSequence(glyph) {
+  if (!state.nameSequenceActive && glyph !== "何") return;
+  if (!state.nameSequenceActive) {
+    state.nameSequenceActive = true;
+    nameSequence.classList.add("is-active");
+    nameSequence.setAttribute("aria-hidden", "false");
+  }
+  if (!nameChars.includes(glyph)) return;
+  state.revealedNameChars.add(glyph);
+  nameSequence.querySelectorAll("span").forEach((slot) => {
+    slot.classList.toggle("is-revealed", state.revealedNameChars.has(slot.dataset.char));
+  });
 }
 
 function nearestPiece(x, y, maxDistance = 58) {
