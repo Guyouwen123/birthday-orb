@@ -104,7 +104,7 @@ const state = {
 
 const finaleSceneImage = new Image();
 finaleSceneImage.decoding = "async";
-finaleSceneImage.src = "assets/cartoon-girl-finale.jpg?v=20260619-cartoon-girl";
+finaleSceneImage.src = "assets/cartoon-girl-subject.png?v=20260619-subject-cutout";
 
 const nameChars = ["何", "坤", "寰", "生", "日", "快", "乐"];
 const birthdaySongNotes = [
@@ -440,8 +440,8 @@ function drawCakeScene(time) {
 
 function drawFinaleSceneImage(time) {
   const imageRatio = finaleSceneImage.naturalWidth / finaleSceneImage.naturalHeight;
-  const maxWidth = state.width * 0.9;
-  const maxHeight = state.height * 0.88;
+  const maxWidth = state.width * 0.78;
+  const maxHeight = state.height * 0.9;
   let drawWidth = Math.min(maxWidth, maxHeight * imageRatio);
   let drawHeight = drawWidth / imageRatio;
   if (drawHeight > maxHeight) {
@@ -454,47 +454,47 @@ function drawFinaleSceneImage(time) {
   drawHeight *= breathe;
 
   const x = (state.width - drawWidth) / 2;
-  const y = state.height * 0.52 - drawHeight / 2;
-  const radius = Math.min(28, drawWidth * 0.045);
+  const y = state.height * 0.55 - drawHeight / 2;
 
   ctx.save();
-  ctx.shadowColor = "rgba(255, 216, 154, 0.42)";
-  ctx.shadowBlur = 42;
-  roundedRect(x, y, drawWidth, drawHeight, radius);
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  const aura = ctx.createRadialGradient(state.width / 2, y + drawHeight * 0.58, 20, state.width / 2, y + drawHeight * 0.5, drawHeight * 0.55);
+  aura.addColorStop(0, "rgba(255,236,168,0.3)");
+  aura.addColorStop(0.42, "rgba(255,157,181,0.16)");
+  aura.addColorStop(0.7, "rgba(123,223,246,0.09)");
+  aura.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = aura;
+  ctx.beginPath();
+  ctx.ellipse(state.width / 2, y + drawHeight * 0.54, drawWidth * 0.55, drawHeight * 0.48, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.clip();
+
+  ctx.shadowColor = "rgba(255, 216, 154, 0.38)";
+  ctx.shadowBlur = 32;
   ctx.drawImage(finaleSceneImage, x, y, drawWidth, drawHeight);
 
-  const warmth = ctx.createRadialGradient(state.width * 0.52, y + drawHeight * 0.7, 10, state.width * 0.5, y + drawHeight * 0.55, drawHeight * 0.65);
-  warmth.addColorStop(0, "rgba(255,236,168,0.22)");
-  warmth.addColorStop(0.48, "rgba(255,157,181,0.08)");
+  const warmth = ctx.createRadialGradient(state.width * 0.51, y + drawHeight * 0.64, 10, state.width * 0.5, y + drawHeight * 0.56, drawHeight * 0.46);
+  warmth.addColorStop(0, "rgba(255,236,168,0.18)");
+  warmth.addColorStop(0.48, "rgba(255,157,181,0.06)");
   warmth.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = warmth;
-  ctx.fillRect(x, y, drawWidth, drawHeight);
+  ctx.fillRect(0, 0, state.width, state.height);
 
   if (state.girlAwake) {
-    ctx.fillStyle = "rgba(255,255,255,0.1)";
-    ctx.fillRect(x, y, drawWidth, drawHeight);
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    ctx.beginPath();
+    ctx.ellipse(state.width / 2, y + drawHeight * 0.48, drawWidth * 0.34, drawHeight * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = "rgba(255, 241, 168, 0.78)";
     ctx.lineWidth = Math.max(1.2, drawWidth * 0.006);
     ctx.lineCap = "round";
-    const eyeY = y + drawHeight * 0.39;
-    const leftEyeX = x + drawWidth * 0.43;
-    const rightEyeX = x + drawWidth * 0.58;
+    const eyeY = y + drawHeight * 0.28;
+    const leftEyeX = x + drawWidth * 0.46;
+    const rightEyeX = x + drawWidth * 0.57;
     const eyeW = drawWidth * 0.032;
     ctx.beginPath();
     ctx.arc(leftEyeX, eyeY, eyeW, Math.PI * 1.08, Math.PI * 1.92);
     ctx.arc(rightEyeX, eyeY, eyeW, Math.PI * 1.08, Math.PI * 1.92);
     ctx.stroke();
   }
-  ctx.restore();
-
-  ctx.save();
-  ctx.strokeStyle = "rgba(223,248,255,0.32)";
-  ctx.lineWidth = 1.4;
-  roundedRect(x, y, drawWidth, drawHeight, radius);
-  ctx.stroke();
   ctx.restore();
 
   ctx.save();
