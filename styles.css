@@ -17,6 +17,9 @@
 html,
 body {
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
@@ -39,6 +42,7 @@ button {
 
 .birthday-app {
   min-height: 100vh;
+  overflow: hidden;
   padding: clamp(18px, 3vw, 36px);
   position: relative;
 }
@@ -63,11 +67,14 @@ button {
     linear-gradient(92deg, transparent, rgba(123, 223, 246, 0.13), transparent),
     linear-gradient(18deg, transparent, rgba(184, 140, 255, 0.14), transparent);
   content: "";
-  inset: -28%;
+  height: 150vh;
+  left: 50%;
   opacity: 0.44;
   pointer-events: none;
   position: absolute;
-  transform: rotate(-18deg) translateX(var(--parallax-x, 0px));
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-18deg);
+  width: 100vw;
 }
 
 .stage {
@@ -331,7 +338,8 @@ h1 {
 
 @media (max-width: 720px) {
   body {
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .stage {
