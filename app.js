@@ -65,7 +65,8 @@ const state = {
   handDetector: null,
   cameraStream: null,
   cameraOn: false,
-  lastGesturePick: 0
+  lastGesturePick: 0,
+  lastFinger: null
 };
 
 function fibonacciSphere(count) {
@@ -440,7 +441,8 @@ async function startCameraGesture() {
     cameraButton.classList.add("is-on");
     gestureLayer.classList.add("is-on");
     fingerDot.classList.add("is-on");
-    statusText.textContent = "手势已开启：用食指靠近某个祝福片。";
+    state.lastFinger = null;
+    statusText.textContent = "手势已开启：移动食指旋转星体，靠近祝福片即可选中。";
     detectHands();
   } catch (error) {
     statusText.textContent = "摄像头或手势模型暂时不可用，可以继续用鼠标/触控选择。";
@@ -450,6 +452,7 @@ async function startCameraGesture() {
 
 function stopCameraGesture() {
   state.cameraOn = false;
+  state.lastFinger = null;
   cameraButton.classList.remove("is-on");
   gestureLayer.classList.remove("is-on");
   fingerDot.classList.remove("is-on");
@@ -485,6 +488,16 @@ async function detectHands() {
       fingerDot.style.top = `${screenY}px`;
       updatePointer(screenX, screenY);
 
+      if (state.lastFinger) {
+        const dx = normalizedX - state.lastFinger.x;
+        const dy = normalizedY - state.lastFinger.y;
+        if (Math.abs(dx) + Math.abs(dy) < 0.22) {
+          state.targetY += dx * 3.2;
+          state.targetX = Math.max(-1.22, Math.min(1.22, state.targetX - dy * 3.2));
+        }
+      }
+      state.lastFinger = { x: normalizedX, y: normalizedY };
+
       context.fillStyle = "#d9b56f";
       context.beginPath();
       context.arc(mirroredX, rawY, 10, 0, Math.PI * 2);
@@ -495,6 +508,8 @@ async function detectHands() {
         selectPiece(pick);
         state.lastGesturePick = performance.now();
       }
+    } else {
+      state.lastFinger = null;
     }
   } catch (error) {
     statusText.textContent = "手势识别中断了，鼠标/触控仍然可用。";
