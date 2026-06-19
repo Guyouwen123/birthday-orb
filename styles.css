@@ -1,14 +1,12 @@
 :root {
   color-scheme: dark;
-  --bg: #0f1020;
-  --ink: #fff8e8;
-  --muted: rgba(255, 248, 232, 0.7);
-  --rose: #ff6f91;
-  --gold: #ffd166;
-  --mint: #70e1b5;
-  --cyan: #55d5f6;
-  --violet: #9d82ff;
-  --panel: rgba(21, 22, 42, 0.78);
+  --bg: #06080d;
+  --ink: #f7efe3;
+  --muted: rgba(247, 239, 227, 0.62);
+  --gold: #d9b56f;
+  --steel: #9fb2c7;
+  --amber: #c98c4a;
+  --panel: rgba(8, 11, 17, 0.72);
 }
 
 * {
@@ -24,9 +22,10 @@ body {
   margin: 0;
   overflow: hidden;
   background:
-    radial-gradient(circle at 18% 18%, rgba(255, 209, 102, 0.16), transparent 28%),
-    radial-gradient(circle at 78% 20%, rgba(85, 213, 246, 0.18), transparent 28%),
-    linear-gradient(145deg, #15101f 0%, #0f1020 46%, #101b1b 100%);
+    radial-gradient(circle at 50% 45%, rgba(217, 181, 111, 0.16), transparent 26%),
+    radial-gradient(circle at 16% 18%, rgba(104, 132, 164, 0.14), transparent 28%),
+    radial-gradient(circle at 82% 76%, rgba(201, 140, 74, 0.1), transparent 32%),
+    linear-gradient(145deg, #08090f 0%, #0d1118 48%, #05070b 100%);
   color: var(--ink);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -45,10 +44,10 @@ button {
 
 .birthday-app::before {
   background-image:
-    radial-gradient(circle, rgba(255, 248, 232, 0.9) 0 1px, transparent 1.5px),
-    radial-gradient(circle, rgba(255, 248, 232, 0.7) 0 1px, transparent 1.5px);
-  background-position: 0 0, 42px 58px;
-  background-size: 96px 96px, 132px 132px;
+    radial-gradient(circle, rgba(247, 239, 227, 0.66) 0 1px, transparent 1.4px),
+    radial-gradient(circle, rgba(217, 181, 111, 0.44) 0 1px, transparent 1.5px);
+  background-position: 0 0, 52px 68px;
+  background-size: 118px 118px, 172px 172px;
   content: "";
   inset: 0;
   opacity: 0.2;
@@ -169,6 +168,7 @@ h1 {
   display: grid;
   justify-self: center;
   min-height: min(72vh, 720px);
+  perspective: 980px;
   place-items: center;
   position: relative;
   touch-action: none;
@@ -187,34 +187,52 @@ h1 {
 }
 
 .orb::before {
-  background: radial-gradient(circle, rgba(255, 248, 232, 0.08), rgba(255, 248, 232, 0.02) 48%, transparent 72%);
-  border: 1px solid rgba(255, 248, 232, 0.08);
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.11), transparent 22%),
+    radial-gradient(circle at 50% 54%, rgba(217, 181, 111, 0.08), rgba(98, 116, 137, 0.05) 48%, transparent 72%);
+  border: 1px solid rgba(247, 239, 227, 0.08);
   border-radius: 50%;
   content: "";
-  inset: 3%;
+  filter: blur(0.2px);
+  inset: 1%;
+  position: absolute;
+}
+
+.orb::after {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 42%, rgba(217, 181, 111, 0.12) 56%, transparent 66%),
+    linear-gradient(120deg, transparent 28%, rgba(255, 255, 255, 0.08) 48%, transparent 62%);
+  border-radius: 50%;
+  content: "";
+  inset: 4%;
+  mix-blend-mode: screen;
+  pointer-events: none;
   position: absolute;
 }
 
 .orb-shadow {
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.46), transparent 68%);
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.64), transparent 68%);
   bottom: 5%;
-  filter: blur(4px);
-  height: 52px;
+  filter: blur(7px);
+  height: 64px;
   position: absolute;
-  transform: translateY(42px);
-  width: min(56vw, 460px);
+  transform: translateY(54px);
+  width: min(58vw, 500px);
 }
 
 .tile {
   align-items: center;
   background:
-    linear-gradient(155deg, color-mix(in srgb, var(--tile-color), white 16%), var(--tile-color)),
-    rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.58);
+    linear-gradient(142deg, rgba(255, 255, 255, 0.42), transparent 22%),
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.38), transparent 24%),
+    linear-gradient(155deg, color-mix(in srgb, var(--tile-color), white 8%), color-mix(in srgb, var(--tile-color), black 18%));
+  border: 1px solid rgba(255, 244, 218, 0.34);
   box-shadow:
-    inset 0 1px 12px rgba(255, 255, 255, 0.28),
-    0 14px 24px rgba(0, 0, 0, 0.24);
-  color: #15101f;
+    inset 0 1px 11px rgba(255, 255, 255, 0.22),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.24),
+    0 1px 0 rgba(255, 255, 255, 0.32),
+    0 15px 28px rgba(0, 0, 0, 0.38);
+  color: #1a1410;
   cursor: pointer;
   display: grid;
   font-size: clamp(1.06rem, 2.3vw, 1.75rem);
@@ -238,11 +256,30 @@ h1 {
   z-index: var(--z);
 }
 
+.tile::before {
+  background: inherit;
+  content: "";
+  filter: brightness(0.48) saturate(0.8);
+  inset: 6px -7px -8px 7px;
+  opacity: var(--side-opacity);
+  position: absolute;
+  transform: translateZ(-1px);
+  z-index: -1;
+}
+
 .tile.hex {
   clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%);
 }
 
+.tile.hex::before {
+  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%);
+}
+
 .tile.pent {
+  clip-path: polygon(50% 0, 98% 35%, 79% 100%, 21% 100%, 2% 35%);
+}
+
+.tile.pent::before {
   clip-path: polygon(50% 0, 98% 35%, 79% 100%, 21% 100%, 2% 35%);
 }
 
@@ -251,22 +288,23 @@ h1 {
 }
 
 .tile.is-active {
-  filter: saturate(1.26) brightness(1.08);
+  filter: saturate(1.12) brightness(1.16) drop-shadow(0 0 22px rgba(217, 181, 111, 0.32));
   transform:
     translate3d(calc(var(--x) * 1px), calc(var(--y) * 1px), 0)
-    scale(calc(var(--scale) * 1.62));
+    scale(calc(var(--scale) * 1.48));
   z-index: 900;
 }
 
 .tile.is-dim {
-  filter: saturate(0.75);
-  opacity: 0.42;
+  filter: saturate(0.54) brightness(0.62);
+  opacity: 0.32;
 }
 
 .selection-card {
   align-items: center;
   background: var(--panel);
-  border: 1px solid rgba(255, 248, 232, 0.22);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(247, 239, 227, 0.2);
   border-radius: 8px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
   display: grid;
@@ -290,9 +328,9 @@ h1 {
 
 .selected-glyph {
   align-items: center;
-  background: var(--gold);
-  border-radius: 7px;
-  color: #15101f;
+  background: linear-gradient(145deg, #f1d89c, var(--gold));
+  border-radius: 6px;
+  color: #18110b;
   display: grid;
   font-size: 1.7rem;
   font-weight: 950;

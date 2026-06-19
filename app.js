@@ -31,7 +31,7 @@ const blessings = [
   ["燃", "愿你继续热烈，继续发光，继续被爱。"]
 ];
 
-const colors = ["#ff6f91", "#ffd166", "#70e1b5", "#55d5f6", "#f4a261", "#a7c957", "#f78c6b", "#b8f2e6"];
+const colors = ["#d9b56f", "#9fb2c7", "#c98c4a", "#6f879d", "#d0c0a0", "#8ea681", "#b97963", "#8390aa"];
 
 const orb = document.querySelector("#orb");
 const orbWrap = document.querySelector("#orbWrap");
@@ -50,7 +50,7 @@ const state = {
   rotationX: -0.28,
   rotationY: 0.35,
   velocityX: 0,
-  velocityY: 0.006,
+  velocityY: 0,
   radius: 230,
   activeIndex: 0,
   dragging: false,
@@ -126,6 +126,7 @@ function renderOrb() {
     const y = rotated.y * state.radius * perspective;
     const depthScale = 0.62 + perspective * 0.58;
     const visible = rotated.z > -0.78;
+    const sideOpacity = Math.max(0.2, Math.min(0.72, 0.72 - rotated.z * 0.26));
 
     tile.screenX = rect.left + rect.width / 2 + x;
     tile.screenY = rect.top + rect.height / 2 + y;
@@ -135,6 +136,7 @@ function renderOrb() {
     tile.element.style.setProperty("--scale", depthScale);
     tile.element.style.setProperty("--tile-size", `${size}px`);
     tile.element.style.setProperty("--z", Math.round((rotated.z + 1) * 200));
+    tile.element.style.setProperty("--side-opacity", sideOpacity);
     tile.element.classList.toggle("is-hidden", !visible);
     tile.element.classList.toggle("is-active", index === state.activeIndex);
     tile.element.classList.toggle("is-dim", index !== state.activeIndex && rotated.z < -0.12);
@@ -146,8 +148,10 @@ function animate() {
   if (!state.dragging) {
     state.rotationX += state.velocityX;
     state.rotationY += state.velocityY;
-    state.velocityX *= 0.96;
-    state.velocityY = state.velocityY * 0.96 + 0.006 * 0.04;
+    state.velocityX *= 0.82;
+    state.velocityY *= 0.82;
+    if (Math.abs(state.velocityX) < 0.0003) state.velocityX = 0;
+    if (Math.abs(state.velocityY) < 0.0003) state.velocityY = 0;
   }
   renderOrb();
   requestAnimationFrame(animate);
@@ -206,8 +210,8 @@ function onPointerMove(event) {
   state.rotationY += dx * 0.008;
   state.rotationX -= dy * 0.008;
   state.rotationX = Math.max(-1.35, Math.min(1.35, state.rotationX));
-  state.velocityY = dx * 0.0008;
-  state.velocityX = -dy * 0.0008;
+  state.velocityY = dx * 0.00025;
+  state.velocityX = -dy * 0.00025;
   state.lastPointer.x = event.clientX;
   state.lastPointer.y = event.clientY;
 }
@@ -224,7 +228,7 @@ function shuffleBlessings() {
   const mixed = [...blessings].sort(() => Math.random() - 0.5);
   buildOrb(mixed);
   statusText.textContent = "祝福已经重新排布。";
-  state.velocityY = 0.016;
+  state.velocityY = 0;
 }
 
 function loadScript(src) {
@@ -329,7 +333,7 @@ async function detectHands() {
         state.lastGesturePick = performance.now();
       }
 
-      const centerOffset = (normalizedX - 0.5) * 0.012;
+      const centerOffset = (normalizedX - 0.5) * 0.004;
       state.velocityY = state.velocityY * 0.82 + centerOffset;
       void cameraRect;
     }
